@@ -39,3 +39,10 @@
   role: secondary
   enabled: true
   url: "https://developers.openai.com/api/docs/pricing"
+
+- module: rate_card.sources.anthropic
+  class: Anthropic
+  name: anthropic-direct
+  role: secondary
+  enabled: true
+  url: "https://docs.anthropic.com/en/docs/about-claude/models/overview"
