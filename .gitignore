@@ -208,6 +208,7 @@ tempCodeRunnerFile.py
 
 # Project artefacts
 dist/
+.cache/
 previous.json
 
 # IDE

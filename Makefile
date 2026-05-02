@@ -74,14 +74,14 @@ ci: fmt lint type-check test-cover
 
 pipeline:
 	@printf "Running pipeline against fixture...\n"
-	@mkdir -p dist
-	@$(UV) rate-card generate --use-fixture --output dist/rate-card.json
-	@printf "\033[32mPipeline smoke test passed. Output: dist/rate-card.json\033[0m\n"
+	@mkdir -p .cache
+	@$(UV) rate-card generate --use-fixture --output .cache/rate-card.json
+	@printf "\033[32mPipeline smoke test passed. Output: .cache/rate-card.json\033[0m\n"
 
 # ── Cleanup ───────────────────────────────────────────────────────────────────
 
 clean:
-	@rm -rf dist/ htmlcov/ .coverage .ruff_cache/ .mypy_cache/ .pytest_cache/
+	@rm -rf dist/ .cache/ htmlcov/ .coverage .ruff_cache/ .mypy_cache/ .pytest_cache/
 	@find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	@printf "\033[32mClean.\033[0m\n"
 
@@ -113,7 +113,7 @@ help:
 	@echo "  make ci              Full CI pipeline"
 	@echo ""
 	@echo "Pipeline:"
-	@echo "  make pipeline        Smoke test against fixture, writes dist/rate-card.json"
+	@echo "  make pipeline        Smoke test against fixture, writes .cache/rate-card.json"
 	@echo ""
 	@echo "Other:"
 	@echo "  make clean           Remove artefacts and caches"
