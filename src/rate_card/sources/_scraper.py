@@ -1,5 +1,8 @@
+import re
 from collections.abc import Iterable, Iterator
 from typing import ClassVar, Literal, TypedDict
+
+from selectolax.parser import HTMLParser, Node
 
 from rate_card.sources._http import fetch_text
 from rate_card.sources._normalise import round_per_million
@@ -16,13 +19,97 @@ class ScrapedRow(TypedDict, total=False):
     pricing_tiers: list[PricingTier]
 
 
+def parse_price(text: str) -> float | None:
+    """Parse a price cell like '$1.40' or '0.30' into a float; return None for free/empty/dashes."""
+    s = text.strip()
+    if not s or s.lower() in ("free", "-", "\\", "n/a", "tbd"):
+        return None
+    m = re.match(r"^\$?([\d,]+\.?\d*)", s)
+    if m:
+        return float(m.group(1).replace(",", ""))
+    return None
+
+
+def _col_index(headers: list[str], *candidates: str) -> int | None:
+    """Return the index of the first header matching any candidate (case-insensitive substring)."""
+    lower = [h.lower() for h in headers]
+    for cand in candidates:
+        cand_l = cand.lower()
+        for i, h in enumerate(lower):
+            if cand_l in h:
+                return i
+    return None
+
+
+def _table_headers(table: Node) -> list[str]:
+    """Return header cell texts from thead > th, falling back to first tr > th."""
+    ths = table.css("thead th")
+    if not ths:
+        ths = table.css("tr:first-child th")
+    return [th.text(strip=True) for th in ths]
+
+
+def extract_price_tables(
+    html: str,
+    *,
+    model_col: str = "Model",
+    input_col: str = "Input",
+    output_col: str = "Output",
+    cache_read_col: str | None = "Cached Input",
+    cache_write_col: str | None = None,
+) -> list[dict[str, str]]:
+    """Extract rows from every HTML table whose headers contain model/input/output columns.
+
+    Returns a list of dicts keyed by the column header labels passed in.
+    Tables without a model column and at least one price column are skipped.
+    """
+    tree = HTMLParser(html)
+    rows: list[dict[str, str]] = []
+
+    for table in tree.css("table"):
+        headers = _table_headers(table)
+        if not headers:
+            continue
+        mi = _col_index(headers, model_col)
+        ii = _col_index(headers, input_col)
+        oi = _col_index(headers, output_col)
+        if mi is None or (ii is None and oi is None):
+            continue
+        cr_i = _col_index(headers, cache_read_col) if cache_read_col else None
+        cw_i = _col_index(headers, cache_write_col) if cache_write_col else None
+
+        for tr in table.css("tbody tr"):
+            cells = [td.text(strip=True) for td in tr.css("td")]
+            required = [x for x in [mi, ii, oi] if x is not None]
+            if not required or len(cells) <= max(required):
+                continue
+            record: dict[str, str] = {}
+            record[model_col] = cells[mi] if mi < len(cells) else ""
+            if ii is not None and ii < len(cells):
+                record[input_col] = cells[ii]
+            if oi is not None and oi < len(cells):
+                record[output_col] = cells[oi]
+            if cr_i is not None and cr_i < len(cells):
+                record[cache_read_col] = cells[cr_i]  # type: ignore[index]
+            if cw_i is not None and cw_i < len(cells):
+                record[cache_write_col] = cells[cw_i]  # type: ignore[index]
+            rows.append(record)
+    return rows
+
+
 class BaseScraper:
     name: ClassVar[str]
     role: ClassVar[Literal["primary", "secondary"]] = "secondary"
     provider: ClassVar[str]
     url: ClassVar[str]
 
-    def __init__(self, *, enabled: bool = True, fixture_path: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        enabled: bool = True,
+        fixture_path: str | None = None,
+        **_kwargs: object,
+    ) -> None:
         self.enabled = enabled
         self._fixture_path = fixture_path
 

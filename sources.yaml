@@ -4,3 +4,10 @@
   role: primary
   enabled: true
   url: "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
+
+- module: rate_card.sources.glm
+  class: GLM
+  name: glm-direct
+  role: secondary
+  enabled: true
+  url: "https://docs.z.ai/guides/overview/pricing"
