@@ -70,6 +70,46 @@ def generate(
 
 
 @app.command()
+def summarise(
+    current: Annotated[Path, typer.Argument(help="Path to current rate-card.json.")],
+    previous: Annotated[
+        Path | None,
+        typer.Option(
+            "--previous", help="Path to previous rate-card.json. Omit to treat all entries as new."
+        ),
+    ] = None,
+) -> None:
+    """Print a markdown summary of changes between two rate-card documents."""
+    from rate_card.changelog import format_summary
+    from rate_card.changelog import summarise as _summarise
+
+    try:
+        with open(current) as fh:
+            curr_doc = json.load(fh)
+    except FileNotFoundError as exc:
+        typer.echo(f"error: file not found: {exc}", err=True)
+        raise typer.Exit(1) from exc
+    except json.JSONDecodeError as exc:
+        typer.echo(f"error: invalid JSON: {exc}", err=True)
+        raise typer.Exit(1) from exc
+
+    prev_doc: dict[str, object] | None = None
+    if previous is not None:
+        try:
+            with open(previous) as fh:
+                prev_doc = json.load(fh)
+        except FileNotFoundError as exc:
+            typer.echo(f"error: file not found: {exc}", err=True)
+            raise typer.Exit(1) from exc
+        except json.JSONDecodeError as exc:
+            typer.echo(f"error: invalid JSON: {exc}", err=True)
+            raise typer.Exit(1) from exc
+
+    summary = _summarise(prev_doc, curr_doc)
+    typer.echo(format_summary(summary))
+
+
+@app.command()
 def validate(
     path: Annotated[Path, typer.Argument(help="Path to rate-card.json to validate.")],
     schema: Annotated[Path, typer.Option("--schema", help="Path to schema.")] = Path(

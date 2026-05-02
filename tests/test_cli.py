@@ -174,3 +174,42 @@ def test_validate_fails_on_invalid_document(tmp_path: Path) -> None:
         ["validate", str(bad), "--schema", str(SCHEMA_PATH)],
     )
     assert result.exit_code == 1
+
+
+def _write_card(path: Path, keys: list[str], input_price: float = 1.0) -> None:
+    models = [{"key": k, "input_per_million": input_price, "output_per_million": 2.0} for k in keys]
+    with open(path, "w") as fh:
+        json.dump({"models": models}, fh)
+
+
+def test_summarise_no_previous(tmp_path: Path) -> None:
+    curr = tmp_path / "curr.json"
+    _write_card(curr, ["openai:gpt-4o"])
+    result = runner.invoke(app, ["summarise", str(curr)])
+    assert result.exit_code == 0
+    assert "added" in result.output
+
+
+def test_summarise_with_previous(tmp_path: Path) -> None:
+    prev = tmp_path / "prev.json"
+    curr = tmp_path / "curr.json"
+    _write_card(prev, ["openai:gpt-4o"])
+    _write_card(curr, ["openai:gpt-4o", "openai:gpt-5"])
+    result = runner.invoke(app, ["summarise", "--previous", str(prev), str(curr)])
+    assert result.exit_code == 0
+    assert "added" in result.output
+    assert "gpt-5" in result.output
+
+
+def test_summarise_current_not_found(tmp_path: Path) -> None:
+    result = runner.invoke(app, ["summarise", str(tmp_path / "missing.json")])
+    assert result.exit_code == 1
+
+
+def test_summarise_previous_not_found(tmp_path: Path) -> None:
+    curr = tmp_path / "curr.json"
+    _write_card(curr, ["openai:gpt-4o"])
+    result = runner.invoke(
+        app, ["summarise", "--previous", str(tmp_path / "missing.json"), str(curr)]
+    )
+    assert result.exit_code == 1
