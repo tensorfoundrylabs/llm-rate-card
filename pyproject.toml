@@ -1,0 +1,89 @@
+[build-system]
+requires = ["uv_build"]
+build-backend = "uv_build"
+
+[project]
+name = "rate-card"
+version = "0.2.0"
+description = "Daily-curated LLM pricing and capability rate card"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.27",
+    "pyyaml>=6.0",
+    "jsonschema>=4.23",
+    "typer>=0.12",
+]
+
+[project.scripts]
+rate-card = "rate_card.cli:app"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "pytest-httpx>=0.30",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "types-pyyaml>=6.0",
+    "types-jsonschema>=4.23",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "pytest-httpx>=0.30",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "types-pyyaml>=6.0",
+    "types-jsonschema>=4.23",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort
+    "N",        # pep8-naming
+    "UP",       # pyupgrade
+    "B",        # flake8-bugbear
+    "A",        # flake8-builtins
+    "C4",       # flake8-comprehensions
+    "SIM",      # flake8-simplify
+    "RUF",      # ruff-specific
+]
+ignore = [
+    "E501",     # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["rate_card"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"
+files = ["src/rate_card"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=rate_card --cov-report=term-missing --cov-fail-under=90"
+
+[tool.coverage.run]
+source = ["rate_card"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+]
+omit = [
+    "src/rate_card/types.py",
+]
