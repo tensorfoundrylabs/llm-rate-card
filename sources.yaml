@@ -25,3 +25,10 @@
   role: secondary
   enabled: true
   url: "https://groq.com/pricing"
+
+- module: rate_card.sources.xai
+  class: XAI
+  name: xai-direct
+  role: secondary
+  enabled: true
+  url: "https://docs.x.ai/developers/models"
