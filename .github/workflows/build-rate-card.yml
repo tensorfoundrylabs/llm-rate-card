@@ -1,0 +1,176 @@
+name: build rate card
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  ci:
+    name: test and lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: install dependencies
+        run: uv sync
+
+      - name: fmt check
+        run: uv run ruff format --check src/ tests/
+
+      - name: lint
+        run: uv run ruff check src/ tests/
+
+      - name: type check
+        run: uv run mypy src/rate_card/
+
+      - name: test with coverage
+        run: uv run pytest tests/ --cov=rate_card --cov-report=term-missing --cov-fail-under=90
+
+  generate-fixture:
+    name: generate (fixture)
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: install dependencies
+        run: uv sync
+
+      - name: generate from fixture
+        run: |
+          mkdir -p dist
+          uv run rate-card generate \
+            --use-fixture \
+            --output dist/rate-card.json
+
+      - name: validate output
+        run: uv run rate-card validate dist/rate-card.json
+
+      - name: upload fixture artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rate-card-fixture
+          path: dist/rate-card.json
+          retention-days: 7
+
+  release:
+    name: generate and release
+    needs: ci
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: install dependencies
+        run: uv sync
+
+      - name: get previous rate card
+        id: prev
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download latest -p rate-card.json -O previous.json
+          echo "found=true" >> "$GITHUB_OUTPUT"
+
+      - name: generate from live sources
+        run: |
+          mkdir -p dist
+          PREV_FLAG=""
+          if [ -f previous.json ]; then
+            PREV_FLAG="--previous previous.json"
+          fi
+          uv run rate-card generate \
+            --output dist/rate-card.json \
+            $PREV_FLAG
+
+      - name: validate output
+        run: uv run rate-card validate dist/rate-card.json
+
+      - name: check if content changed
+        id: changed
+        run: |
+          NEW_HASH=$(python3 -c "import json; d=json.load(open('dist/rate-card.json')); print(d['content_hash'])")
+          echo "new_hash=$NEW_HASH" >> "$GITHUB_OUTPUT"
+          if [ -f previous.json ]; then
+            OLD_HASH=$(python3 -c "import json; d=json.load(open('previous.json')); print(d['content_hash'])")
+            echo "old_hash=$OLD_HASH" >> "$GITHUB_OUTPUT"
+            if [ "$NEW_HASH" = "$OLD_HASH" ]; then
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+              echo "Content unchanged, skipping release."
+            else
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: create release tag
+        id: tag
+        if: steps.changed.outputs.changed == 'true'
+        run: |
+          DATE=$(date -u +%Y.%m.%d)
+          TAG="$DATE"
+          N=1
+          while git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; do
+            TAG="$DATE-$N"
+            N=$((N + 1))
+          done
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: sign artefact with sigstore
+        if: steps.changed.outputs.changed == 'true' && vars.RELEASE_SIGNING == 'true'
+        uses: sigstore/gh-action-sigstore-python@v3
+        with:
+          inputs: dist/rate-card.json
+
+      - name: publish release
+        if: steps.changed.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          NOTES="Changes since previous release: https://github.com/${{ github.repository }}/releases"
+          ASSETS="dist/rate-card.json"
+          if [ -f dist/rate-card.divergences.json ]; then
+            ASSETS="$ASSETS dist/rate-card.divergences.json"
+          fi
+          if [ "${{ vars.RELEASE_SIGNING }}" = "true" ]; then
+            if [ -f "dist/rate-card.json.sigstore.json" ]; then
+              ASSETS="$ASSETS dist/rate-card.json.sigstore.json"
+            fi
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG"
+          git push origin "$TAG"
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes "$NOTES" \
+            $ASSETS
