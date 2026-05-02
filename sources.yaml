@@ -1,0 +1,6 @@
+- module: rate_card.sources.litellm
+  class: LiteLLM
+  name: litellm
+  role: primary
+  enabled: true
+  url: "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
