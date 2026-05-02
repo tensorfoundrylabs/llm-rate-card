@@ -11,3 +11,10 @@
   role: secondary
   enabled: true
   url: "https://docs.z.ai/guides/overview/pricing"
+
+- module: rate_card.sources.minimax
+  class: MiniMax
+  name: minimax-direct
+  role: secondary
+  enabled: true
+  url: "https://platform.minimax.io/docs/guides/pricing-paygo"
