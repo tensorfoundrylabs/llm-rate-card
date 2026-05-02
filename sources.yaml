@@ -32,3 +32,10 @@
   role: secondary
   enabled: true
   url: "https://docs.x.ai/developers/models"
+
+- module: rate_card.sources.openai
+  class: OpenAI
+  name: openai-direct
+  role: secondary
+  enabled: true
+  url: "https://developers.openai.com/api/docs/pricing"
