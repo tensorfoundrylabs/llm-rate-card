@@ -6,7 +6,7 @@ PYTHON  := $(UV) python
 
 .PHONY: install install-tools \
         test test-unit test-cover test-verbose \
-        fmt lint type-check \
+        fmt lint lint-yaml type-check \
         ready-tools ready ci \
         pipeline \
         clean \
@@ -54,20 +54,25 @@ lint:
 	@$(UV) ruff check src/ tests/
 	@printf "\033[32mLinted.\033[0m\n"
 
+lint-yaml:
+	@printf "Linting YAML...\n"
+	@$(UV) yamllint .
+	@printf "\033[32mYAML linted.\033[0m\n"
+
 type-check:
 	@$(UV) mypy src/rate_card/
 
 # ── Ready (pre-commit quality gate) ──────────────────────────────────────────
 
-ready-tools: fmt lint
+ready-tools: fmt lint lint-yaml
 	@printf "\033[32mCode quality checks passed.\033[0m\n"
 
-ready: fmt lint type-check test
+ready: fmt lint lint-yaml type-check test
 	@printf "\033[32mReady for commit.\033[0m\n"
 
 # ── CI ────────────────────────────────────────────────────────────────────────
 
-ci: fmt lint type-check test-cover
+ci: fmt lint lint-yaml type-check test-cover
 	@printf "\033[32mCI passed.\033[0m\n"
 
 # ── Pipeline (local smoke test) ───────────────────────────────────────────────
@@ -107,7 +112,8 @@ help:
 	@echo "  make test-cover      Tests with coverage report"
 	@echo "  make test-verbose    Tests with verbose output"
 	@echo "  make fmt             Format code"
-	@echo "  make lint            Lint code"
+	@echo "  make lint            Lint Python"
+	@echo "  make lint-yaml       Lint YAML"
 	@echo "  make type-check      Run mypy"
 	@echo "  make ready           Pre-commit gate (fmt + lint + type-check + test)"
 	@echo "  make ci              Full CI pipeline"

@@ -183,42 +183,34 @@ jobs:
 
           ASSETS="dist/rate-card.json dist/rate-card.json.gz"
 
-          TABLE_ROWS="| \`rate-card.json\` | \`sha256:${HASH_JSON}\` |
-| \`rate-card.json.gz\` | \`sha256:${HASH_GZ}\` |"
-
-          if [ -f dist/rate-card.divergences.json ]; then
-            HASH_DIV=$(sha256sum dist/rate-card.divergences.json | awk '{print $1}')
-            ASSETS="$ASSETS dist/rate-card.divergences.json"
-            TABLE_ROWS="${TABLE_ROWS}
-| \`rate-card.divergences.json\` | \`sha256:${HASH_DIV}\` |"
-          fi
-
-          if [ "${{ vars.RELEASE_SIGNING }}" = "true" ]; then
-            if [ -f "dist/rate-card.json.sigstore.json" ]; then
-              HASH_SIG=$(sha256sum dist/rate-card.json.sigstore.json | awk '{print $1}')
-              ASSETS="$ASSETS dist/rate-card.json.sigstore.json"
-              TABLE_ROWS="${TABLE_ROWS}
-| \`rate-card.json.sigstore.json\` | \`sha256:${HASH_SIG}\` |"
-            fi
-          fi
-
           if [ -f previous.json ]; then
             SUMMARY=$(uv run rate-card summarise --previous previous.json dist/rate-card.json 2>/dev/null || echo "No changes.")
           else
             SUMMARY=$(uv run rate-card summarise dist/rate-card.json 2>/dev/null || echo "No changes.")
           fi
 
-          cat > release-notes.md <<NOTES_EOF
-${COMPARE_LINE}
-
-${SUMMARY}
-
-| Artefact | SHA-256 |
-|---|---|
-${TABLE_ROWS}
-
-Content hash: \`sha256:${CONTENT_HASH}\`
-NOTES_EOF
+          {
+            echo "${COMPARE_LINE}"
+            echo
+            echo "${SUMMARY}"
+            echo
+            echo "| Artefact | SHA-256 |"
+            echo "|---|---|"
+            echo "| \`rate-card.json\` | \`sha256:${HASH_JSON}\` |"
+            echo "| \`rate-card.json.gz\` | \`sha256:${HASH_GZ}\` |"
+            if [ -f dist/rate-card.divergences.json ]; then
+              HASH_DIV=$(sha256sum dist/rate-card.divergences.json | awk '{print $1}')
+              ASSETS="$ASSETS dist/rate-card.divergences.json"
+              echo "| \`rate-card.divergences.json\` | \`sha256:${HASH_DIV}\` |"
+            fi
+            if [ "${{ vars.RELEASE_SIGNING }}" = "true" ] && [ -f dist/rate-card.json.sigstore.json ]; then
+              HASH_SIG=$(sha256sum dist/rate-card.json.sigstore.json | awk '{print $1}')
+              ASSETS="$ASSETS dist/rate-card.json.sigstore.json"
+              echo "| \`rate-card.json.sigstore.json\` | \`sha256:${HASH_SIG}\` |"
+            fi
+            echo
+            echo "Content hash: \`sha256:${CONTENT_HASH}\`"
+          } > release-notes.md
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
