@@ -18,3 +18,10 @@
   role: secondary
   enabled: true
   url: "https://platform.minimax.io/docs/guides/pricing-paygo"
+
+- module: rate_card.sources.groq
+  class: Groq
+  name: groq-direct
+  role: secondary
+  enabled: true
+  url: "https://groq.com/pricing"
