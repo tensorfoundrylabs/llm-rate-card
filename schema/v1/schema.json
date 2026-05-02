@@ -1,0 +1,262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.tensorfoundry.io/rate-card/v1/schema.json",
+  "title": "TensorFoundry LLM Rate Card",
+  "description": "Per-model pricing and capability metadata for the LLM provider ecosystem. Published as a signed JSON artefact at github.com/tensorfoundrylabs/llm-rate-card.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "name",
+    "author",
+    "homepage",
+    "license",
+    "currency",
+    "release",
+    "content_hash",
+    "models"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semver of the rate-card schema this document conforms to."
+    },
+    "name": {
+      "type": "string",
+      "const": "TensorFoundry LLM Rate Card"
+    },
+    "author": {
+      "type": "string",
+      "const": "TensorFoundry Pty Ltd"
+    },
+    "homepage": {
+      "type": "string",
+      "format": "uri"
+    },
+    "license": {
+      "type": "string",
+      "description": "SPDX licence identifier."
+    },
+    "license_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "attribution": {
+      "type": "array",
+      "description": "Upstream sources whose licences require credit. Carried in the artefact so downstream consumers inherit the obligation.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "license", "url", "role"],
+        "properties": {
+          "name": { "type": "string" },
+          "license": { "type": "string" },
+          "url": { "type": "string", "format": "uri" },
+          "role": { "type": "string" }
+        }
+      }
+    },
+    "currency": {
+      "type": "string",
+      "description": "ISO 4217 currency code. All per-million figures in this document are denominated in this currency.",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "generated_at"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Calendar version tag, yyyy.mm.dd or yyyy.mm.dd-N for same-day reissues.",
+          "pattern": "^\\d{4}\\.\\d{2}\\.\\d{2}(-\\d+)?$"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_commit": {
+          "type": "string",
+          "description": "Git commit SHA of the generator that produced this artefact.",
+          "pattern": "^[0-9a-f]{7,40}$"
+        },
+        "signature_url": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "content_hash": {
+      "type": "string",
+      "description": "SHA-256 over the canonicalised models array. Used to decide whether a new release is warranted.",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "models": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/model" }
+    }
+  },
+  "$defs": {
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "provider",
+        "model_id",
+        "mode",
+        "input_per_million",
+        "output_per_million",
+        "context_window",
+        "capabilities",
+        "verified",
+        "sources"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Lookup key, <provider>:<model_id>. Stable identity across releases.",
+          "pattern": "^[a-z0-9_]+:[A-Za-z0-9._:/-]+$"
+        },
+        "provider": { "$ref": "#/$defs/provider" },
+        "model_id": {
+          "type": "string",
+          "description": "Provider-native identifier as accepted by the provider's API."
+        },
+        "mode": { "$ref": "#/$defs/mode" },
+        "input_per_million": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Price per 1M input tokens, in the document currency."
+        },
+        "output_per_million": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cache_read_per_million": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Discounted read price for cached input tokens. Null if the provider does not offer caching for this model."
+        },
+        "cache_write_per_million": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Premium write price for populating the cache. Distinct from read price; some providers charge more to write than to read."
+        },
+        "reasoning_per_million": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Price for reasoning tokens emitted by the model. Null for non-reasoning models."
+        },
+        "pricing_tiers": {
+          "type": "array",
+          "description": "Above-threshold pricing for models with tiered rates (long-context Gemini, large-context Claude, etc.). Tiers apply when the input prompt exceeds above_input_tokens.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["above_input_tokens"],
+            "properties": {
+              "above_input_tokens": { "type": "integer", "minimum": 1 },
+              "input_per_million": { "type": "number", "minimum": 0 },
+              "output_per_million": { "type": "number", "minimum": 0 },
+              "cache_read_per_million": { "type": ["number", "null"], "minimum": 0 },
+              "cache_write_per_million": { "type": ["number", "null"], "minimum": 0 }
+            }
+          }
+        },
+        "context_window": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Max input tokens the model accepts."
+        },
+        "max_output_tokens": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/capability" }
+        },
+        "deprecation_date": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "Date the provider sunsets the model. Null if no sunset announced."
+        },
+        "verified": {
+          "type": "string",
+          "format": "date",
+          "description": "Date a maintainer last confirmed this entry against the provider's pricing page. Carried forward across automated runs unless price changed."
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string" },
+          "description": "Source identifiers contributing to this entry, e.g. litellm, anthropic-direct, openrouter."
+        },
+        "source_url": {
+          "type": ["string", "null"],
+          "format": "uri",
+          "description": "Optional link to the canonical pricing page for traceability."
+        }
+      }
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "openai",
+        "anthropic",
+        "azure",
+        "bedrock",
+        "vertex",
+        "gemini",
+        "ollama",
+        "openai_compatible",
+        "openrouter",
+        "deepseek",
+        "groq",
+        "perplexity",
+        "mistral",
+        "cohere",
+        "huggingface",
+        "replicate"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "chat",
+        "completion",
+        "embedding",
+        "image_generation",
+        "audio_transcription",
+        "audio_speech",
+        "moderation",
+        "rerank",
+        "search"
+      ]
+    },
+    "capability": {
+      "type": "string",
+      "enum": [
+        "streaming",
+        "vision",
+        "tools",
+        "structured_output",
+        "prompt_caching",
+        "reasoning",
+        "audio_input",
+        "audio_output",
+        "pdf_input",
+        "web_search",
+        "batch"
+      ]
+    }
+  }
+}

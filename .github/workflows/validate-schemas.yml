@@ -1,0 +1,54 @@
+name: validate schemas
+
+on:
+  pull_request:
+    paths:
+      - "schema/**"
+      - ".github/workflows/validate-schemas.yml"
+  push:
+    branches: [main]
+    paths:
+      - "schema/**"
+      - ".github/workflows/validate-schemas.yml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: discover and validate every schema version
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          fail=0
+          found=0
+          for dir in schema/v*/; do
+            schema="${dir}schema.json"
+            example="${dir}example.json"
+            readme="${dir}README.md"
+            missing=0
+            for f in "$schema" "$example" "$readme"; do
+              if [[ ! -f "$f" ]]; then
+                echo "::error file=$dir::missing $(basename "$f")"
+                missing=1
+              fi
+            done
+            if [[ "$missing" -eq 1 ]]; then
+              fail=1
+              continue
+            fi
+            found=$((found + 1))
+            echo "::group::validating $dir"
+            uvx check-jsonschema --schemafile "$schema" "$example"
+            echo "::endgroup::"
+          done
+          if [[ "$found" -eq 0 ]]; then
+            echo "::error::no schema versions found under schema/v*/"
+            exit 1
+          fi
+          exit "$fail"

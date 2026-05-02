@@ -1,0 +1,108 @@
+{
+  "$schema": "https://schema.tensorfoundry.io/rate-card/v1/schema.json",
+  "schema_version": "1.0.0",
+  "name": "TensorFoundry LLM Rate Card",
+  "author": "TensorFoundry Pty Ltd",
+  "homepage": "https://github.com/tensorfoundrylabs/llm-rate-card",
+  "license": "MIT",
+  "license_url": "https://github.com/tensorfoundrylabs/llm-rate-card/blob/main/LICENSE",
+  "attribution": [
+    {
+      "name": "LiteLLM",
+      "license": "MIT",
+      "url": "https://github.com/BerriAI/litellm",
+      "role": "primary data source"
+    }
+  ],
+  "currency": "USD",
+  "release": {
+    "version": "2026.05.02-1",
+    "generated_at": "2026-05-02T03:14:22Z",
+    "source_commit": "a1b2c3d4e5f6789",
+    "signature_url": "https://github.com/tensorfoundrylabs/llm-rate-card/releases/download/2026.05.02-1/rate-card.json.sig"
+  },
+  "content_hash": "sha256:9f8e7d6c5b4a39281706f5e4d3c2b1a09f8e7d6c5b4a39281706f5e4d3c2b1a0",
+  "models": [
+    {
+      "key": "anthropic:claude-opus-4-7",
+      "provider": "anthropic",
+      "model_id": "claude-opus-4-7",
+      "mode": "chat",
+      "input_per_million": 15.0,
+      "output_per_million": 75.0,
+      "cache_read_per_million": 1.50,
+      "cache_write_per_million": 18.75,
+      "reasoning_per_million": null,
+      "context_window": 200000,
+      "max_output_tokens": 64000,
+      "capabilities": ["streaming", "vision", "tools", "structured_output", "prompt_caching", "reasoning", "pdf_input"],
+      "deprecation_date": null,
+      "verified": "2026-04-28",
+      "sources": ["litellm", "anthropic-direct"],
+      "source_url": "https://www.anthropic.com/pricing"
+    },
+    {
+      "key": "anthropic:claude-sonnet-4-6",
+      "provider": "anthropic",
+      "model_id": "claude-sonnet-4-6",
+      "mode": "chat",
+      "input_per_million": 3.0,
+      "output_per_million": 15.0,
+      "cache_read_per_million": 0.30,
+      "cache_write_per_million": 3.75,
+      "reasoning_per_million": null,
+      "pricing_tiers": [
+        {
+          "above_input_tokens": 200000,
+          "input_per_million": 6.0,
+          "output_per_million": 22.5,
+          "cache_read_per_million": 0.60,
+          "cache_write_per_million": 7.50
+        }
+      ],
+      "context_window": 200000,
+      "max_output_tokens": 64000,
+      "capabilities": ["streaming", "vision", "tools", "structured_output", "prompt_caching", "reasoning", "pdf_input"],
+      "deprecation_date": null,
+      "verified": "2026-04-28",
+      "sources": ["litellm", "anthropic-direct"],
+      "source_url": "https://www.anthropic.com/pricing"
+    },
+    {
+      "key": "openai:gpt-5",
+      "provider": "openai",
+      "model_id": "gpt-5",
+      "mode": "chat",
+      "input_per_million": 5.0,
+      "output_per_million": 20.0,
+      "cache_read_per_million": 2.50,
+      "cache_write_per_million": null,
+      "reasoning_per_million": null,
+      "context_window": 256000,
+      "max_output_tokens": 32768,
+      "capabilities": ["streaming", "vision", "tools", "structured_output", "prompt_caching", "pdf_input", "audio_input"],
+      "deprecation_date": null,
+      "verified": "2026-04-28",
+      "sources": ["litellm", "openai-direct"],
+      "source_url": "https://openai.com/api/pricing"
+    },
+    {
+      "key": "vertex:gemini-3-flash",
+      "provider": "vertex",
+      "model_id": "gemini-3-flash",
+      "mode": "chat",
+      "input_per_million": 0.15,
+      "output_per_million": 0.60,
+      "cache_read_per_million": 0.0375,
+      "cache_write_per_million": null,
+      "reasoning_per_million": null,
+      "context_window": 2097152,
+      "max_output_tokens": 16384,
+      "capabilities": ["streaming", "vision", "tools", "structured_output", "prompt_caching", "audio_input", "audio_output", "web_search"],
+      "deprecation_date": null,
+      "verified": "2026-04-28",
+      "sources": ["litellm"],
+      "source_url": "https://ai.google.dev/pricing"
+    }
+  ]
+}
