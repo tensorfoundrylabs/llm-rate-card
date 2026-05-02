@@ -61,6 +61,8 @@ uv run rate-card --help
 
 `.cache/` holds local dev output. `dist/` holds the release artefact (what the workflow attaches to a GitHub release). Both are gitignored.
 
+Each GitHub release includes both `rate-card.json` and `rate-card.json.gz`. The gz artefact is preferred for binary embedding (Go `//go:embed`, Docker layer baking, and similar) where download size matters. Both carry identical content; `content_hash` in the JSON is the authoritative identity signal.
+
 `--use-fixture` forces every source to read from `tests/fixtures/litellm-snapshot.json` instead of the network. Useful for local iteration.
 
 `--previous path/to/old.json` enables `verified` carry-forward.

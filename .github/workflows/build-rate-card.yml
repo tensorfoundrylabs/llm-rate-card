@@ -113,6 +113,9 @@ jobs:
       - name: validate output
         run: uv run rate-card validate dist/rate-card.json
 
+      - name: compress artefact
+        run: gzip -k -9 dist/rate-card.json
+
       - name: check if content changed
         id: changed
         run: |
@@ -150,27 +153,70 @@ jobs:
         with:
           inputs: dist/rate-card.json
 
+      - name: get previous tag
+        id: prev_tag
+        if: steps.changed.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PREV=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || true)
+          echo "tag=${PREV}" >> "$GITHUB_OUTPUT"
+
       - name: publish release
         if: steps.changed.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
-          NOTES="Changes since previous release: https://github.com/${{ github.repository }}/releases"
-          ASSETS="dist/rate-card.json"
-          if [ -f dist/rate-card.divergences.json ]; then
-            ASSETS="$ASSETS dist/rate-card.divergences.json"
+          PREV_TAG="${{ steps.prev_tag.outputs.tag }}"
+          NEW_TAG="$TAG"
+
+          HASH_JSON=$(sha256sum dist/rate-card.json | awk '{print $1}')
+          HASH_GZ=$(sha256sum dist/rate-card.json.gz | awk '{print $1}')
+          CONTENT_HASH=$(python3 -c "import json; print(json.load(open('dist/rate-card.json'))['content_hash'])")
+
+          if [ -n "$PREV_TAG" ]; then
+            COMPARE_LINE="Compare: https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${NEW_TAG}"
+          else
+            COMPARE_LINE="Compare: first release"
           fi
+
+          ASSETS="dist/rate-card.json dist/rate-card.json.gz"
+
+          TABLE_ROWS="| \`rate-card.json\` | \`sha256:${HASH_JSON}\` |
+| \`rate-card.json.gz\` | \`sha256:${HASH_GZ}\` |"
+
+          if [ -f dist/rate-card.divergences.json ]; then
+            HASH_DIV=$(sha256sum dist/rate-card.divergences.json | awk '{print $1}')
+            ASSETS="$ASSETS dist/rate-card.divergences.json"
+            TABLE_ROWS="${TABLE_ROWS}
+| \`rate-card.divergences.json\` | \`sha256:${HASH_DIV}\` |"
+          fi
+
           if [ "${{ vars.RELEASE_SIGNING }}" = "true" ]; then
             if [ -f "dist/rate-card.json.sigstore.json" ]; then
+              HASH_SIG=$(sha256sum dist/rate-card.json.sigstore.json | awk '{print $1}')
               ASSETS="$ASSETS dist/rate-card.json.sigstore.json"
+              TABLE_ROWS="${TABLE_ROWS}
+| \`rate-card.json.sigstore.json\` | \`sha256:${HASH_SIG}\` |"
             fi
           fi
+
+          cat > release-notes.md <<NOTES_EOF
+${COMPARE_LINE}
+
+| Artefact | SHA-256 |
+|---|---|
+${TABLE_ROWS}
+
+Content hash: \`sha256:${CONTENT_HASH}\`
+NOTES_EOF
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "$TAG"
           git push origin "$TAG"
           gh release create "$TAG" \
             --title "$TAG" \
-            --notes "$NOTES" \
+            --notes-file release-notes.md \
             $ASSETS
