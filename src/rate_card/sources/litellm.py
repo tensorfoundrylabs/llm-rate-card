@@ -65,7 +65,7 @@ _TOKENS_PER_MILLION = 1_000_000
 
 
 def _to_per_million(cost_per_token: float) -> float:
-    return cost_per_token * _TOKENS_PER_MILLION
+    return round(cost_per_token * _TOKENS_PER_MILLION, 6)
 
 
 def _map_provider(litellm_provider: str) -> Provider | None:

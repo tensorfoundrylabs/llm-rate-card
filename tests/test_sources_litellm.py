@@ -423,3 +423,30 @@ def test_build_pricing_tiers_partial_fields() -> None:
     assert tiers[0]["above_input_tokens"] == 200_000
     assert tiers[0]["input_per_million"] == pytest.approx(6.0)
     assert "output_per_million" not in tiers[0]
+
+
+@pytest.mark.parametrize(
+    ("cost_per_token", "expected"),
+    [
+        (4e-07, 0.4),
+        (1e-07, 0.1),
+        (8e-07, 0.8),
+        (1.25e-07, 0.125),
+        (2.5e-08, 0.025),
+        (3e-06, 3.0),
+    ],
+)
+def test_per_million_conversion_rounds_fp_noise(cost_per_token: float, expected: float) -> None:
+    entry = _transform_entry(
+        "test-model",
+        {
+            "litellm_provider": "openai",
+            "input_cost_per_token": cost_per_token,
+            "output_cost_per_token": cost_per_token,
+            "max_input_tokens": 1000,
+            "mode": "chat",
+        },
+    )
+    assert entry is not None
+    assert entry["input_per_million"] == expected
+    assert entry["output_per_million"] == expected
