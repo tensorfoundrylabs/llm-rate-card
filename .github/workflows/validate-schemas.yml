@@ -30,9 +30,11 @@ jobs:
           for dir in schema/v*/; do
             schema="${dir}schema.json"
             example="${dir}example.json"
+            registries="${dir}registries.json"
+            registries_schema="${dir}registries.schema.json"
             readme="${dir}README.md"
             missing=0
-            for f in "$schema" "$example" "$readme"; do
+            for f in "$schema" "$example" "$registries" "$registries_schema" "$readme"; do
               if [[ ! -f "$f" ]]; then
                 echo "::error file=$dir::missing $(basename "$f")"
                 missing=1
@@ -44,7 +46,14 @@ jobs:
             fi
             found=$((found + 1))
             echo "::group::validating $dir"
-            uvx check-jsonschema --schemafile "$schema" "$example"
+            if ! uvx check-jsonschema --schemafile "$schema" "$example"; then
+              echo "::error file=$example::example failed schema validation"
+              fail=1
+            fi
+            if ! uvx check-jsonschema --schemafile "$registries_schema" "$registries"; then
+              echo "::error file=$registries::registries failed meta-schema validation"
+              fail=1
+            fi
             echo "::endgroup::"
           done
           if [[ "$found" -eq 0 ]]; then

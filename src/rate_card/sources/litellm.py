@@ -3,8 +3,8 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Literal
 
-import httpx
-
+from rate_card.sources._http import fetch_text
+from rate_card.sources._normalise import round_per_million
 from rate_card.types import Capability, Mode, PartialEntry, PricingTier, Provider
 
 logger = logging.getLogger(__name__)
@@ -64,10 +64,6 @@ _VALID_MODES: frozenset[Mode] = frozenset(
 _TOKENS_PER_MILLION = 1_000_000
 
 
-def _to_per_million(cost_per_token: float) -> float:
-    return round(cost_per_token * _TOKENS_PER_MILLION, 6)
-
-
 def _map_provider(litellm_provider: str) -> Provider | None:
     provider = _PROVIDER_MAP.get(litellm_provider)
     if provider is None:
@@ -106,16 +102,20 @@ def _build_pricing_tiers(entry: dict[str, Any]) -> list[PricingTier]:
         tier: PricingTier = {"above_input_tokens": 200_000}
         in_cost = entry.get("input_cost_per_token_above_200k_tokens")
         if in_cost is not None:
-            tier["input_per_million"] = _to_per_million(float(in_cost))
+            tier["input_per_million"] = round_per_million(float(in_cost) * _TOKENS_PER_MILLION)
         out_cost = entry.get("output_cost_per_token_above_200k_tokens")
         if out_cost is not None:
-            tier["output_per_million"] = _to_per_million(float(out_cost))
+            tier["output_per_million"] = round_per_million(float(out_cost) * _TOKENS_PER_MILLION)
         cache_read = entry.get("cache_read_input_token_cost_above_200k_tokens")
         if cache_read is not None:
-            tier["cache_read_per_million"] = _to_per_million(float(cache_read))
+            tier["cache_read_per_million"] = round_per_million(
+                float(cache_read) * _TOKENS_PER_MILLION
+            )
         cache_write = entry.get("cache_creation_input_token_cost_above_200k_tokens")
         if cache_write is not None:
-            tier["cache_write_per_million"] = _to_per_million(float(cache_write))
+            tier["cache_write_per_million"] = round_per_million(
+                float(cache_write) * _TOKENS_PER_MILLION
+            )
         tiers.append(tier)
     return tiers
 
@@ -142,8 +142,8 @@ def _transform_entry(raw_key: str, entry: dict[str, Any]) -> PartialEntry | None
         "provider": provider,
         "model_id": model_id,
         "mode": mode,
-        "input_per_million": _to_per_million(float(input_cost)),
-        "output_per_million": _to_per_million(float(output_cost)),
+        "input_per_million": round_per_million(float(input_cost) * _TOKENS_PER_MILLION),
+        "output_per_million": round_per_million(float(output_cost) * _TOKENS_PER_MILLION),
         "sources": ["litellm"],
     }
 
@@ -157,15 +157,21 @@ def _transform_entry(raw_key: str, entry: dict[str, Any]) -> PartialEntry | None
 
     cache_read = entry.get("cache_read_input_token_cost")
     if cache_read is not None:
-        partial["cache_read_per_million"] = _to_per_million(float(cache_read))
+        partial["cache_read_per_million"] = round_per_million(
+            float(cache_read) * _TOKENS_PER_MILLION
+        )
 
     cache_write = entry.get("cache_creation_input_token_cost")
     if cache_write is not None:
-        partial["cache_write_per_million"] = _to_per_million(float(cache_write))
+        partial["cache_write_per_million"] = round_per_million(
+            float(cache_write) * _TOKENS_PER_MILLION
+        )
 
     reasoning_cost = entry.get("output_cost_per_reasoning_token")
     if reasoning_cost is not None:
-        partial["reasoning_per_million"] = _to_per_million(float(reasoning_cost))
+        partial["reasoning_per_million"] = round_per_million(
+            float(reasoning_cost) * _TOKENS_PER_MILLION
+        )
 
     tiers = _build_pricing_tiers(entry)
     if tiers:
@@ -202,15 +208,9 @@ class LiteLLM:
         self._fixture_path = fixture_path
 
     def fetch(self) -> dict[str, Any]:
-        if self._fixture_path:
-            import json
+        import json
 
-            with open(self._fixture_path) as fh:
-                return json.load(fh)  # type: ignore[no-any-return]
-        with httpx.Client(timeout=30) as client:
-            response = client.get(self.url)
-            response.raise_for_status()
-            return response.json()  # type: ignore[no-any-return]
+        return json.loads(fetch_text(self.url, fixture_path=self._fixture_path))  # type: ignore[no-any-return]
 
     def transform(self, raw: dict[str, Any]) -> Iterable[PartialEntry]:
         for key, entry in raw.items():

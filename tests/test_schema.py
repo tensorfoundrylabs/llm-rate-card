@@ -57,19 +57,29 @@ def test_validate_document_missing_required_field() -> None:
     assert "content_hash" in str(exc_info.value.errors)
 
 
-def test_validate_document_invalid_provider() -> None:
+def test_validate_document_invalid_provider_pattern() -> None:
+    # provider must match ^[a-z][a-z0-9_]*$ -- uppercase is rejected
     schema = load_schema(SCHEMA_PATH)
     doc = copy.deepcopy(MINIMAL_VALID)
-    doc["models"][0]["provider"] = "not_a_provider"
+    doc["models"][0]["provider"] = "OpenAI"
     with pytest.raises(SchemaValidationError) as exc_info:
         validate_document(doc, schema)
     assert exc_info.value.errors
 
 
-def test_validate_document_invalid_capability() -> None:
+def test_validate_document_unknown_provider_passes_schema() -> None:
+    # the schema accepts any snake_case identifier; registries cross-check is the strict gate
     schema = load_schema(SCHEMA_PATH)
     doc = copy.deepcopy(MINIMAL_VALID)
-    doc["models"][0]["capabilities"] = ["teleportation"]
+    doc["models"][0]["provider"] = "new_provider_xyz"
+    validate_document(doc, schema)  # must not raise
+
+
+def test_validate_document_invalid_capability_pattern() -> None:
+    # capability must match ^[a-z][a-z0-9_]*$ -- leading digit is rejected
+    schema = load_schema(SCHEMA_PATH)
+    doc = copy.deepcopy(MINIMAL_VALID)
+    doc["models"][0]["capabilities"] = ["1invalid"]
     with pytest.raises(SchemaValidationError):
         validate_document(doc, schema)
 

@@ -14,6 +14,7 @@ dependencies = [
     "pyyaml>=6.0",
     "jsonschema>=4.23",
     "typer>=0.12",
+    "selectolax>=0.3.27",
 ]
 
 [project.scripts]
@@ -41,6 +42,7 @@ dev-dependencies = [
     "yamllint>=1.35",
     "types-pyyaml>=6.0",
     "types-jsonschema>=4.23",
+    "selectolax>=0.3.27",
 ]
 
 [tool.ruff]

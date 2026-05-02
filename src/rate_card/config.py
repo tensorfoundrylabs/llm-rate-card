@@ -10,6 +10,7 @@ class Config:
     litellm_url: str
     schema_path: str
     divergence_threshold: float
+    registries_path: str = "schema/v1/registries.json"
 
 
 _REQUIRED = {"litellm_url", "schema_path", "divergence_threshold"}
@@ -32,4 +33,5 @@ def load_config(path: str | Path = "config.yaml") -> Config:
         litellm_url=str(raw["litellm_url"]),
         schema_path=str(raw["schema_path"]),
         divergence_threshold=threshold,
+        registries_path=str(raw.get("registries_path", "schema/v1/registries.json")),
     )

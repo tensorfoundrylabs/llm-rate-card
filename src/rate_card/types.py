@@ -17,6 +17,11 @@ Provider = Literal[
     "cohere",
     "huggingface",
     "replicate",
+    "glm",
+    "qwen",
+    "minimax",
+    "cerebras",
+    "xai",
 ]
 
 Mode = Literal[
