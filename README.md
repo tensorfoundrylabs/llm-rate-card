@@ -47,9 +47,24 @@ entry = by_key["anthropic:claude-sonnet-4-6"]
 cost = (input_tokens * entry["input_per_million"] + output_tokens * entry["output_per_million"]) / 1_000_000
 ```
 
+## Pipeline
+
+The repository contains both the published artefact (in releases) and the Python pipeline that builds it. A daily GitHub Action fetches the upstream sources, transforms and merges them, validates against the schema, and tags a release only when the canonical content changes.
+
+Local development uses `uv` and `make`:
+
+```bash
+make install        # install deps
+make ready          # fmt + lint + type-check + test, the pre-commit gate
+make pipeline       # run the pipeline against the fixture, write to dist/
+uv run rate-card --help
+```
+
+See [`src/rate_card/README.md`](./src/rate_card/README.md) for how the pipeline is structured and how to add a new source.
+
 ## Releases
 
-Calendar-versioned tags: `yyyy.mm.dd`, with `-N` suffix for same-day reissues. A release is cut only when the canonical content has actually changed — automated runs that produce no diff do not tag.
+Calendar-versioned tags: `yyyy.mm.dd`, with `-N` suffix for same-day reissues. A release is cut only when the canonical content has actually changed. Automated runs that produce no diff do not tag.
 
 Each release attaches `rate-card.json`, a Sigstore signature and certificate, and a CHANGELOG snippet describing what moved.
 
