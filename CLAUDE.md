@@ -20,8 +20,9 @@ The schema is the contract. Output validates against `schema/v1/schema.json`.
 ## Architectural rules
 
 - **Sources are self-contained.** Each `sources/<name>.py` fetches and transforms into our `PartialEntry` shape. The rest of the pipeline never sees upstream-specific fields. New source = new module + entry in `sources.yaml`. Never plumb source-specifics into `generate.py`, `merge.py`, etc.
-- **The schema is the contract.** Don't add fields to the artefact without a schema change. Don't add a runtime model layer (no pydantic) — `TypedDict` mirrors the schema, the JSON Schema validator is the runtime check.
+- **The schema is the contract.** Don't add fields to the artefact without a schema change. Don't add a runtime model layer (no pydantic) -- `TypedDict` mirrors the schema, the JSON Schema validator is the runtime check.
 - **Schema versioning.** `schema/v1/` is locked once a successor exists. New majors copy to `schema/v2/`. Per-version README captures change history. See `schema/AUTHORING.md`.
+- **Open vocabularies.** `provider`, `mode`, and `capabilities[items]` are open patterns in the schema (any `^[a-z][a-z0-9_]*$`). Canonical known values live in `schema/v1/registries.json`. The pipeline cross-checks every emitted value against that file and fails loudly on unknowns. Adding a new provider, mode, or capability requires both the source code change and a `registries.json` update. Never re-introduce closed enums for these three fields.
 - **No backwards-compat shims.** Nothing has shipped publicly yet.
 - **No defensive code for impossible cases.** Trust internal callers. Validate at boundaries (parsing source data, parsing config, validating final output).
 

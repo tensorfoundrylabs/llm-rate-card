@@ -15,6 +15,7 @@ sources.yaml -> fetch -> transform -> merge -> filter -> verified carry-forward 
 | filter | `filter.py` | Keeps only entries whose `key` is in `whitelist.yaml`. Logs whitelist entries with no matching source data. |
 | carry forward | `generate.py` | If `--previous` is supplied, copies `verified` dates from the previous artefact for entries whose prices have not changed. |
 | validate | `schema.py` | Validates the assembled document against `schema/v1/schema.json`. Raises on any mismatch. |
+| cross-check | `registries.py` | Verifies every provider, mode, and capability in the document is listed in `schema/v1/registries.json`. Fails loudly on any unknown value. |
 | hash | `hashing.py` | SHA-256 over the canonicalised `models` array. Drives release-if-changed: identical hash means no new release. |
 | write | `generate.py` | Writes the artefact and, if any divergences were recorded, a sibling `*.divergences.json`. |
 
@@ -26,6 +27,10 @@ sources.yaml -> fetch -> transform -> merge -> filter -> verified carry-forward 
 | `generate.py` | Orchestration. Knows nothing source-specific. |
 | `sources/base.py` | `Source` Protocol and registry loader. |
 | `sources/litellm.py` | LiteLLM-specific fetch and transform. All LiteLLM details live here. |
+| `sources/_http.py` | Shared HTTP fetch helper used by all sources. |
+| `sources/_normalise.py` | Shared numeric helpers (round_per_million). |
+| `sources/_scraper.py` | `BaseScraper` template-method base for secondary HTML scrapers. |
+| `registries.py` | Load `registries.json` and cross-check vocabulary against it. |
 | `filter.py` | Whitelist application. |
 | `merge.py` | Multi-source overlay and divergence detection. |
 | `schema.py` | Load and validate against the JSON Schema. |
@@ -36,19 +41,36 @@ sources.yaml -> fetch -> transform -> merge -> filter -> verified carry-forward 
 
 ## Adding a source
 
-A source is a class implementing the `Source` Protocol. Drop a new module under `sources/` and add an entry to `sources.yaml`. No edits to `generate.py`, `merge.py`, or anything downstream.
+There are two patterns.
+
+### Primary source
+
+There is currently one primary source: LiteLLM. A primary source is a custom class that transforms a rich upstream format (JSON, etc.) into `PartialEntry` items. It uses `sources/_http.fetch_text` for fetching and `sources/_normalise.round_per_million` for price conversion. Set `role = "primary"` and register it in `sources.yaml`.
+
+### Secondary scraper
+
+Secondary sources overlay the primary's data with prices scraped directly from a provider's pricing page. Extend `BaseScraper` from `sources/_scraper.py`, set the four class variables, and implement `_extract`:
 
 ```python
-class MySource:
-    name = "my-source"
-    role = "secondary"
-    enabled = True
+from rate_card.sources._scraper import BaseScraper, ScrapedRow
 
-    def fetch(self) -> Any: ...
-    def transform(self, raw: Any) -> Iterable[PartialEntry]: ...
+class AcmeSource(BaseScraper):
+    name = "acme"
+    provider = "acme"
+    url = "https://acme.example.com/pricing"
+
+    def _extract(self, raw: str) -> Iterable[ScrapedRow]:
+        # parse raw HTML, yield ScrapedRow dicts
+        ...
 ```
 
-Secondary sources should populate only the fields they have authority over. The merge step composes them with the primary entry. If a secondary supplies a price that differs from the primary by more than `divergence_threshold` (in `config.yaml`), it is recorded in `*.divergences.json` rather than silently overwriting.
+`BaseScraper._row_to_entry` handles setting `key`, `provider`, `sources`, `source_url`, and rounding all numeric fields. Do not set `mode`, `capabilities`, `context_window`, or other primary-owned fields -- those come from the primary source via merge.
+
+Add the class to `sources.yaml` with `role: secondary`. The merge step composes it with the primary entry and records price divergences exceeding `divergence_threshold`.
+
+### Open-vocabulary constraint
+
+Emitting a new `provider` value in any source also requires adding that value to `schema/v1/registries.json`. The pipeline's cross-check step fails loudly if an unknown value reaches the final document. This applies to `mode` and `capabilities` values too.
 
 ## Running
 
@@ -74,4 +96,4 @@ make test           # all tests
 make test-cover     # with coverage report -> htmlcov/
 ```
 
-Tests are offline-first. The HTTP fetch path in `sources/litellm.py` is the one uncovered area; everything else runs against fixtures.
+Tests are offline-first. `pytest-httpx` mocks all HTTP requests. The fixture at `tests/fixtures/litellm-snapshot.json` is the primary data source for most tests.

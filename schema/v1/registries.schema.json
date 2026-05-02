@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.tensorfoundry.io/rate-card/v1/registries.schema.json",
+  "title": "Rate Card Registries",
+  "description": "Canonical vocabularies for the rate card schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["providers", "modes", "capabilities"],
+  "properties": {
+    "providers":    { "$ref": "#/$defs/identifier_list" },
+    "modes":        { "$ref": "#/$defs/identifier_list" },
+    "capabilities": { "$ref": "#/$defs/identifier_list" }
+  },
+  "$defs": {
+    "identifier_list": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$",
+        "minLength": 1
+      }
+    }
+  }
+}

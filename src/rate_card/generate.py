@@ -8,6 +8,7 @@ from rate_card.config import Config, load_config
 from rate_card.filter import apply_whitelist, load_whitelist
 from rate_card.hashing import content_hash
 from rate_card.merge import Divergence, merge
+from rate_card.registries import cross_check_vocabulary, load_registries
 from rate_card.schema import load_schema, validate_document
 from rate_card.sources.base import Source, load_sources
 from rate_card.types import Attribution, Document, FullEntry, PartialEntry, Release
@@ -164,6 +165,9 @@ def run(
     doc = _build_document(kept, release_version, generated_at, source_commit)
 
     validate_document(doc, schema)  # type: ignore[arg-type]
+
+    registries = load_registries(cfg.registries_path)
+    cross_check_vocabulary(doc, registries)
 
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)

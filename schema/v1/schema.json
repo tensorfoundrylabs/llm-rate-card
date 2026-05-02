@@ -209,54 +209,21 @@
     },
     "provider": {
       "type": "string",
-      "enum": [
-        "openai",
-        "anthropic",
-        "azure",
-        "bedrock",
-        "vertex",
-        "gemini",
-        "ollama",
-        "openai_compatible",
-        "openrouter",
-        "deepseek",
-        "groq",
-        "perplexity",
-        "mistral",
-        "cohere",
-        "huggingface",
-        "replicate"
-      ]
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "minLength": 1,
+      "description": "Provider identifier. Canonical known values are listed in registries.json; the schema accepts any snake_case identifier."
     },
     "mode": {
       "type": "string",
-      "enum": [
-        "chat",
-        "completion",
-        "embedding",
-        "image_generation",
-        "audio_transcription",
-        "audio_speech",
-        "moderation",
-        "rerank",
-        "search"
-      ]
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "minLength": 1,
+      "description": "Inference mode. Canonical known values are listed in registries.json; the schema accepts any snake_case identifier."
     },
     "capability": {
       "type": "string",
-      "enum": [
-        "streaming",
-        "vision",
-        "tools",
-        "structured_output",
-        "prompt_caching",
-        "reasoning",
-        "audio_input",
-        "audio_output",
-        "pdf_input",
-        "web_search",
-        "batch"
-      ]
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "minLength": 1,
+      "description": "Model capability flag. Canonical known values are listed in registries.json; the schema accepts any snake_case identifier."
     }
   }
 }

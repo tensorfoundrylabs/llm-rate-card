@@ -1,3 +1,4 @@
 litellm_url: "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
 schema_path: "schema/v1/schema.json"
+registries_path: "schema/v1/registries.json"
 divergence_threshold: 0.20

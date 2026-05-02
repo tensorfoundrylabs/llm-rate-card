@@ -9,6 +9,7 @@ ignore: |
   htmlcov/
   dist/
   .cache/
+  .playwright-mcp/
 
 rules:
   line-length: disable

@@ -1,0 +1,49 @@
+{
+  "providers": [
+    "openai",
+    "anthropic",
+    "azure",
+    "bedrock",
+    "vertex",
+    "gemini",
+    "ollama",
+    "openai_compatible",
+    "openrouter",
+    "deepseek",
+    "groq",
+    "perplexity",
+    "mistral",
+    "cohere",
+    "huggingface",
+    "replicate",
+    "glm",
+    "qwen",
+    "minimax",
+    "cerebras",
+    "xai"
+  ],
+  "modes": [
+    "chat",
+    "completion",
+    "embedding",
+    "image_generation",
+    "audio_transcription",
+    "audio_speech",
+    "moderation",
+    "rerank",
+    "search"
+  ],
+  "capabilities": [
+    "streaming",
+    "vision",
+    "tools",
+    "structured_output",
+    "prompt_caching",
+    "reasoning",
+    "audio_input",
+    "audio_output",
+    "pdf_input",
+    "web_search",
+    "batch"
+  ]
+}

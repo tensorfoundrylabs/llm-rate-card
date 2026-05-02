@@ -50,8 +50,16 @@ The `content_hash` is for the `models` component only by design, this means two 
 
 We've disabled `additionalProperties` everywhere to catch unknown silent field propagation.han silently propagating. |
 
+## Vocabularies
+
+`provider`, `mode`, and `capabilities[items]` are open-pattern fields: the schema accepts any `snake_case` identifier matching `^[a-z][a-z0-9_]*$`. The canonical known values are maintained in `registries.json` alongside this file.
+
+The pipeline cross-checks every value in a generated document against `registries.json` and fails loudly on any unknown value. Adding a new provider, mode, or capability therefore requires both a code change (the source emitting the value) and a `registries.json` update.
+
+The meta-schema for `registries.json` is `registries.schema.json`. CI validates both the rate-card example and the registries file on every schema-touching PR.
+
 ## Change history
 
 | Date | Version | Change | Author | Company
 |---|---|---|---|---|
-| unreleased | 1.0.0 | initial | Thushan Fernando | TensorFoundry
+| unreleased | 1.0.0 | initial; open-vocabulary refactor; registries.json introduced | Thushan Fernando | TensorFoundry

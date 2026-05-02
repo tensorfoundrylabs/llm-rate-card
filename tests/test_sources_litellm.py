@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from pytest_httpx import HTTPXMock
 
 from rate_card.sources.litellm import (
     LiteLLM,
@@ -33,6 +34,15 @@ def test_fetch_from_fixture() -> None:
     raw = source.fetch()
     assert "claude-sonnet-4-5" in raw
     assert "sample_spec" in raw
+
+
+def test_fetch_from_url(httpx_mock: HTTPXMock) -> None:
+    with open(FIXTURE_PATH) as fh:
+        fixture_text = fh.read()
+    httpx_mock.add_response(text=fixture_text)
+    source = LiteLLM(url="https://example.com/prices.json")
+    raw = source.fetch()
+    assert "claude-sonnet-4-5" in raw
 
 
 def test_use_fixture_method() -> None:

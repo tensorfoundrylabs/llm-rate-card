@@ -4,6 +4,7 @@ from typing import Annotated
 
 import typer
 
+from rate_card.registries import cross_check_vocabulary, load_registries
 from rate_card.schema import SchemaValidationError, load_schema, validate_document
 
 app = typer.Typer(help="LLM rate card generator.", add_completion=False)
@@ -115,8 +116,11 @@ def validate(
     schema: Annotated[Path, typer.Option("--schema", help="Path to schema.")] = Path(
         "schema/v1/schema.json"
     ),
+    registries: Annotated[
+        Path, typer.Option("--registries", help="Path to registries.json.")
+    ] = Path("schema/v1/registries.json"),
 ) -> None:
-    """Validate a rate-card.json against the schema."""
+    """Validate a rate-card.json against the schema and registries."""
     try:
         schema_doc = load_schema(schema)
     except FileNotFoundError as exc:
@@ -139,6 +143,13 @@ def validate(
         typer.echo(f"validation failed: {exc}", err=True)
         for error in exc.errors:
             typer.echo(f"  - {error}", err=True)
+        raise typer.Exit(1) from exc
+
+    try:
+        reg = load_registries(registries)
+        cross_check_vocabulary(doc, reg)
+    except (FileNotFoundError, ValueError) as exc:
+        typer.echo(f"registries check failed: {exc}", err=True)
         raise typer.Exit(1) from exc
 
     typer.echo(f"{path}: valid")
