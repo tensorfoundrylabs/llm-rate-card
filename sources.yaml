@@ -46,3 +46,10 @@
   role: secondary
   enabled: true
   url: "https://docs.anthropic.com/en/docs/about-claude/models/overview"
+
+- module: rate_card.sources.cerebras
+  class: Cerebras
+  name: cerebras-direct
+  role: secondary
+  enabled: true
+  url: "https://www.cerebras.ai/pricing"
