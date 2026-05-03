@@ -87,11 +87,13 @@ openai:
   - o3
   - o3-mini
   - o4-mini
-  # Multi-modal (audio rates carried in modality_pricing). Image-generation
-  # models excluded: they lack a token-based context_window which the schema
-  # currently requires. Schema accommodation for image-only models is a follow-up.
+  # Multi-modal (audio rates carried in modality_pricing)
   - gpt-realtime-1.5
   - gpt-realtime-mini
+  # Image generation
+  - gpt-image-2
+  - gpt-image-1.5
+  - gpt-image-1-mini
   # Embeddings
   - text-embedding-3-large
   - text-embedding-3-small
