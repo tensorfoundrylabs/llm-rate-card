@@ -204,6 +204,21 @@
           "type": ["string", "null"],
           "format": "uri",
           "description": "Optional link to the canonical pricing page for traceability."
+        },
+        "modality_pricing": {
+          "type": "object",
+          "description": "Per-modality token pricing for multi-modal models. Keys are modality names from registries.modalities (excluding 'text', which is the top-level default).",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["input_per_million"],
+            "properties": {
+              "input_per_million": { "type": "number", "minimum": 0 },
+              "output_per_million": { "type": ["number", "null"], "minimum": 0 },
+              "cache_read_per_million": { "type": ["number", "null"], "minimum": 0 },
+              "cache_write_per_million": { "type": ["number", "null"], "minimum": 0 }
+            }
+          }
         }
       }
     },

@@ -7,7 +7,7 @@ from selectolax.parser import HTMLParser, Node
 
 from rate_card.sources._http import fetch_text
 from rate_card.sources._normalise import round_per_million
-from rate_card.types import PartialEntry, PricingTier
+from rate_card.types import ModalityPricing, PartialEntry, PricingTier
 
 
 class ScrapedRow(TypedDict, total=False):
@@ -18,6 +18,7 @@ class ScrapedRow(TypedDict, total=False):
     cache_write_per_million: float | None
     reasoning_per_million: float | None
     pricing_tiers: list[PricingTier]
+    modality_pricing: dict[str, ModalityPricing] | None
 
 
 def parse_price(text: str) -> float | None:
@@ -201,5 +202,30 @@ class BaseScraper:
 
         if "pricing_tiers" in row:
             entry["pricing_tiers"] = row["pricing_tiers"]
+
+        raw_mp = row.get("modality_pricing")
+        if raw_mp:
+            rounded: dict[str, ModalityPricing] = {}
+            for modality, mp in raw_mp.items():
+                block: ModalityPricing = {
+                    "input_per_million": round_per_million(mp["input_per_million"]),
+                }
+                out = mp.get("output_per_million")
+                if "output_per_million" in mp:
+                    block["output_per_million"] = (
+                        round_per_million(out) if out is not None else None
+                    )
+                cr = mp.get("cache_read_per_million")
+                if "cache_read_per_million" in mp:
+                    block["cache_read_per_million"] = (
+                        round_per_million(cr) if cr is not None else None
+                    )
+                cw = mp.get("cache_write_per_million")
+                if "cache_write_per_million" in mp:
+                    block["cache_write_per_million"] = (
+                        round_per_million(cw) if cw is not None else None
+                    )
+                rounded[modality] = block
+            entry["modality_pricing"] = rounded
 
         return entry

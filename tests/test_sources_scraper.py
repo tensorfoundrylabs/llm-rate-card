@@ -3,7 +3,7 @@ from collections.abc import Iterable
 import pytest
 
 from rate_card.sources._scraper import BaseScraper, ScrapedRow
-from rate_card.types import PricingTier
+from rate_card.types import ModalityPricing, PricingTier
 
 
 class _StubScraper(BaseScraper):
@@ -195,6 +195,70 @@ def test_use_fixture_sets_fixture_path() -> None:
     scraper = _make_scraper()
     scraper.use_fixture("/tmp/fixture.html")
     assert scraper._fixture_path == "/tmp/fixture.html"
+
+
+# ── modality_pricing carried through with rounding ────────────────────────────
+
+
+def test_row_to_entry_carries_modality_pricing() -> None:
+    mp: dict[str, ModalityPricing] = {
+        "audio": {"input_per_million": 32.0, "output_per_million": 64.0},
+        "image": {"input_per_million": 5.0, "output_per_million": None},
+    }
+    scraper = _make_scraper(
+        {
+            "model_id": "gpt-realtime-1.5",
+            "input_per_million": 4.0,
+            "output_per_million": 16.0,
+            "modality_pricing": mp,
+        }
+    )
+    entries = list(scraper.transform(""))
+    assert "modality_pricing" in entries[0]
+    result_mp = entries[0]["modality_pricing"]
+    assert result_mp["audio"]["input_per_million"] == pytest.approx(32.0)
+    assert result_mp["audio"]["output_per_million"] == pytest.approx(64.0)
+    assert result_mp["image"]["input_per_million"] == pytest.approx(5.0)
+    assert result_mp["image"]["output_per_million"] is None
+
+
+def test_row_to_entry_modality_pricing_rounding_applied() -> None:
+    mp: dict[str, ModalityPricing] = {
+        "audio": {"input_per_million": 32.0000001, "cache_read_per_million": 0.40000004},
+    }
+    scraper = _make_scraper(
+        {
+            "model_id": "m",
+            "input_per_million": 4.0,
+            "output_per_million": 16.0,
+            "modality_pricing": mp,
+        }
+    )
+    entries = list(scraper.transform(""))
+    result_mp = entries[0]["modality_pricing"]
+    assert result_mp["audio"]["input_per_million"] == pytest.approx(32.0)
+    assert result_mp["audio"]["cache_read_per_million"] == pytest.approx(0.4)
+
+
+def test_row_to_entry_no_modality_pricing_when_absent() -> None:
+    scraper = _make_scraper(
+        {"model_id": "gpt-4o", "input_per_million": 2.5, "output_per_million": 10.0}
+    )
+    entries = list(scraper.transform(""))
+    assert "modality_pricing" not in entries[0]
+
+
+def test_row_to_entry_modality_pricing_none_skipped() -> None:
+    scraper = _make_scraper(
+        {
+            "model_id": "m",
+            "input_per_million": 1.0,
+            "output_per_million": 2.0,
+            "modality_pricing": None,
+        }
+    )
+    entries = list(scraper.transform(""))
+    assert "modality_pricing" not in entries[0]
 
 
 # ── _extract not implemented on base ──────────────────────────────────────────

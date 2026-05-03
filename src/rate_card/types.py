@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from typing import Literal, NotRequired, TypedDict
 
 Provider = Literal[
@@ -59,6 +60,15 @@ class PricingTier(TypedDict, total=False):
     cache_write_per_million: float | None
 
 
+class ModalityPricing(TypedDict, total=False):
+    """Per-modality token pricing block. input_per_million is required."""
+
+    input_per_million: float
+    output_per_million: float | None
+    cache_read_per_million: float | None
+    cache_write_per_million: float | None
+
+
 class PartialEntry(TypedDict, total=False):
     """Intermediate shape produced by a source. Only key is required."""
 
@@ -72,6 +82,7 @@ class PartialEntry(TypedDict, total=False):
     cache_write_per_million: float | None
     reasoning_per_million: float | None
     pricing_tiers: list[PricingTier]
+    modality_pricing: Mapping[str, ModalityPricing]
     context_window: int
     max_output_tokens: int | None
     capabilities: list[Capability]
@@ -94,6 +105,7 @@ class FullEntry(TypedDict):
     cache_write_per_million: NotRequired[float | None]
     reasoning_per_million: NotRequired[float | None]
     pricing_tiers: NotRequired[list[PricingTier]]
+    modality_pricing: NotRequired[Mapping[str, ModalityPricing]]
     context_window: int
     max_output_tokens: NotRequired[int | None]
     capabilities: list[Capability]

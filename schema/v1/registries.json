@@ -1,4 +1,5 @@
 {
+  "modalities": ["audio", "image", "video"],
   "providers": [
     "openai",
     "anthropic",

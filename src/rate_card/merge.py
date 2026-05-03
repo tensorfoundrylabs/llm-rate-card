@@ -52,7 +52,17 @@ def _overlay(base: dict[str, Any], overlay: dict[str, Any]) -> None:
     for field, value in overlay.items():
         if field in ("key", "sources"):
             continue
-        if value is not None:
+        if (
+            field == "modality_pricing"
+            and isinstance(value, dict)
+            and isinstance(base.get(field), dict)
+        ):
+            # Deep-merge: secondary adds or replaces individual modality keys without
+            # discarding modalities already present in base.
+            merged_mp: dict[str, Any] = dict(base[field])
+            merged_mp.update(value)
+            base[field] = merged_mp
+        elif value is not None:
             base[field] = value
 
 

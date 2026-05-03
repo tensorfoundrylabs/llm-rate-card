@@ -24,10 +24,11 @@ A document has a metadata block at the top and a flat `models` array. Lookup is 
 |---|---|
 | `key` | stable lookup key, `<provider>:<model_id>` |
 | `provider`, `model_id`, `mode` | provider enum, native API identifier, mode enum (chat, embedding, ...) |
-| `input_per_million`, `output_per_million` | base rates |
+| `input_per_million`, `output_per_million` | base rates (text modality) |
 | `cache_read_per_million`, `cache_write_per_million` | nullable, kept separate so providers that price reads and writes differently are represented honestly |
 | `reasoning_per_million` | nullable, for o-series and extended-thinking models |
 | `pricing_tiers` | optional, above-threshold rates for long-context models |
+| `modality_pricing` | optional, per-modality rates for multi-modal models (see below) |
 | `context_window`, `max_output_tokens` | input and output limits |
 | `capabilities` | enum array (vision, tools, structured_output, prompt_caching, ...) |
 | `deprecation_date` | nullable ISO date if the provider has announced a sunset |
@@ -58,8 +59,13 @@ The pipeline cross-checks every value in a generated document against `registrie
 
 The meta-schema for `registries.json` is `registries.schema.json`. CI validates both the rate-card example and the registries file on every schema-touching PR.
 
+### modality_pricing
+
+Some providers publish separate token rates per input modality (audio, image, video). The `modality_pricing` field captures these as a map keyed by modality name. Keys must appear in `registries.modalities`; the `text` modality is never a key here because text rates are the top-level default (`input_per_million`, `output_per_million`, etc.). Each value has the same shape as a pricing tier (`input_per_million` required, `output_per_million`, `cache_read_per_million`, and `cache_write_per_million` optional). Consumers that do not recognise a modality key should fall back to the top-level text rates rather than treating the model as unpriced.
+
 ## Change history
 
 | Date | Version | Change | Author | Company
 |---|---|---|---|---|
 | unreleased | 1.0.0 | initial; open-vocabulary refactor; registries.json introduced | Thushan Fernando | TensorFoundry
+| 2026-05-02 | 1.0.0 | add modality_pricing field and modalities registry vocabulary | Thushan Fernando | TensorFoundry

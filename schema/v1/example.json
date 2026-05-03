@@ -103,6 +103,36 @@
       "verified": "2026-04-28",
       "sources": ["litellm"],
       "source_url": "https://ai.google.dev/pricing"
+    },
+    {
+      "key": "openai:gpt-realtime-1.5",
+      "provider": "openai",
+      "model_id": "gpt-realtime-1.5",
+      "mode": "chat",
+      "input_per_million": 4.0,
+      "output_per_million": 16.0,
+      "cache_read_per_million": 0.4,
+      "cache_write_per_million": null,
+      "reasoning_per_million": null,
+      "context_window": 128000,
+      "max_output_tokens": null,
+      "capabilities": ["streaming", "tools", "audio_input", "audio_output"],
+      "deprecation_date": null,
+      "verified": "2026-05-02",
+      "sources": ["litellm", "openai-direct"],
+      "source_url": "https://developers.openai.com/api/docs/pricing",
+      "modality_pricing": {
+        "audio": {
+          "input_per_million": 32.0,
+          "output_per_million": 64.0,
+          "cache_read_per_million": 0.4
+        },
+        "image": {
+          "input_per_million": 5.0,
+          "output_per_million": null,
+          "cache_read_per_million": 0.5
+        }
+      }
     }
   ]
 }

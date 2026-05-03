@@ -113,3 +113,50 @@ def test_schema_validation_error_has_errors_list() -> None:
     with pytest.raises(SchemaValidationError) as exc_info:
         validate_document(doc, schema)
     assert len(exc_info.value.errors) >= 2
+
+
+def test_validate_modality_pricing_valid() -> None:
+    schema = load_schema(SCHEMA_PATH)
+    doc = copy.deepcopy(MINIMAL_VALID)
+    doc["models"][0]["modality_pricing"] = {
+        "audio": {
+            "input_per_million": 32.0,
+            "output_per_million": 64.0,
+            "cache_read_per_million": 0.4,
+        },
+        "image": {
+            "input_per_million": 5.0,
+            "output_per_million": None,
+        },
+    }
+    validate_document(doc, schema)  # must not raise
+
+
+def test_validate_modality_pricing_missing_input_fails() -> None:
+    schema = load_schema(SCHEMA_PATH)
+    doc = copy.deepcopy(MINIMAL_VALID)
+    doc["models"][0]["modality_pricing"] = {
+        "audio": {"output_per_million": 64.0},
+    }
+    with pytest.raises(SchemaValidationError):
+        validate_document(doc, schema)
+
+
+def test_validate_modality_pricing_negative_value_fails() -> None:
+    schema = load_schema(SCHEMA_PATH)
+    doc = copy.deepcopy(MINIMAL_VALID)
+    doc["models"][0]["modality_pricing"] = {
+        "audio": {"input_per_million": -1.0},
+    }
+    with pytest.raises(SchemaValidationError):
+        validate_document(doc, schema)
+
+
+def test_validate_modality_pricing_extra_property_fails() -> None:
+    schema = load_schema(SCHEMA_PATH)
+    doc = copy.deepcopy(MINIMAL_VALID)
+    doc["models"][0]["modality_pricing"] = {
+        "audio": {"input_per_million": 32.0, "unexpected_field": "bad"},
+    }
+    with pytest.raises(SchemaValidationError):
+        validate_document(doc, schema)
