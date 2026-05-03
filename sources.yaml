@@ -53,3 +53,10 @@
   role: secondary
   enabled: true
   url: "https://www.cerebras.ai/pricing"
+
+- module: rate_card.sources.qwen
+  class: Qwen
+  name: qwen-direct
+  role: secondary
+  enabled: true
+  url: "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
