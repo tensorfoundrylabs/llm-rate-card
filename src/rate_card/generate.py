@@ -67,6 +67,7 @@ def _build_document(
             "cache_write_per_million",
             "reasoning_per_million",
             "pricing_tiers",
+            "modality_pricing",
             "max_output_tokens",
             "deprecation_date",
             "source_url",
