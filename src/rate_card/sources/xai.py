@@ -1,15 +1,13 @@
-import json
 import re
 from collections.abc import Iterable
 
-from rate_card.sources._scraper import BaseScraper, ScrapedRow
+from rate_card.sources._scraper import BaseScraper, ScrapedRow, parse_rsc_block
 
 # Unit is 1e-4 USD per million tokens (i.e., $n10000 = $1.00/M).
 _UNIT = 1e-4
 
 # RSC block containing model list; matched by presence of auth_mgmt.ListModelsForTeamResponse.
 _RSC_MARKER = "ListModelsForTeamResponse"
-_BLOCK_RE = re.compile(r'self\.__next_f\.push\(\[1,"(.+?)"\]\)', re.DOTALL)
 _MODEL_RE = re.compile(
     r'"name":"(?P<name>[^"]+)"'
     r'.*?"promptTextTokenPrice":"\$n(?P<inp>\d+)"'
@@ -18,22 +16,13 @@ _MODEL_RE = re.compile(
 )
 
 
-def _parse_rsc_block(html: str) -> str | None:
-    """Return the unescaped RSC block containing xAI model pricing."""
-    for raw in _BLOCK_RE.findall(html):
-        if _RSC_MARKER in raw:
-            result: str = json.loads(f'"{raw}"')
-            return result
-    return None
-
-
 class XAI(BaseScraper):
     name = "xai-direct"
     provider = "xai"
     url = "https://docs.x.ai/developers/models"
 
     def _extract(self, raw: str) -> Iterable[ScrapedRow]:
-        block = _parse_rsc_block(raw)
+        block = parse_rsc_block(raw, _RSC_MARKER)
         if block is None:
             return
 

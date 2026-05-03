@@ -6,7 +6,7 @@ from rate_card.sources._scraper import BaseScraper, ScrapedRow
 
 # Cerebras pricing page has no HTML tables; data lives in RSC push blocks.
 # Extraction uses regex over the unescaped RSC payload rather than HTML parsing.
-_BLOCK_RE = re.compile(r"self\.__next_f\.push\(\[1,\"(.+?)\"\]\)", re.DOTALL)
+_BLOCK_RE = re.compile(r'self\.__next_f\.push\(\[1,"(.+?)"\]\)', re.DOTALL)
 # Row format: "cells":["[PROVIDER]Name","~N tokens/s","$$X.XX/M tokens","$$Y.YY/M tokens"]
 _ROW_RE = re.compile(
     r'"cells":\["(?:\[[^\]]+\])?([^"]+)","[^"]+","\$\$([^/]+)/M[^"]*","\$\$([^/]+)/M[^"]*"\]'
@@ -33,7 +33,12 @@ def _slug(name: str) -> str:
 
 
 def _parse_blocks(html: str) -> str | None:
-    """Return the unescaped RSC block that contains pricing cell arrays."""
+    """Return the unescaped RSC block that contains pricing cell arrays.
+
+    The block must contain both "cells" and "/M tokens" before we pay the
+    JSON-unescape cost; this is narrower than the single-marker check in
+    ``parse_rsc_block`` and avoids false positives from other push blocks.
+    """
     for raw in _BLOCK_RE.findall(html):
         if "cells" in raw and "/M tokens" in raw:
             result: str = json.loads(f'"{raw}"')

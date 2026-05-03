@@ -1,3 +1,4 @@
+import json
 import re
 from collections.abc import Iterable, Iterator
 from typing import ClassVar, Literal, TypedDict
@@ -95,6 +96,53 @@ def extract_price_tables(
                 record[cache_write_col] = cells[cw_i]  # type: ignore[index]
             rows.append(record)
     return rows
+
+
+_RSC_BLOCK_RE = re.compile(r'self\.__next_f\.push\(\[1,"(.+?)"\]\)', re.DOTALL)
+
+
+def parse_rsc_block(html: str, marker: str) -> str | None:
+    """Return the first unescaped RSC push block whose raw content contains *marker*.
+
+    Next.js RSC payloads are embedded as ``self.__next_f.push([1, "<escaped>"])``
+    fragments. This helper finds the block matching *marker*, JSON-unescapes it,
+    and returns the plain text for further parsing.
+    """
+    for raw in _RSC_BLOCK_RE.findall(html):
+        if marker in raw:
+            result: str = json.loads(f'"{raw}"')
+            return result
+    return None
+
+
+def make_scraped_row(
+    model_id: str,
+    input_price: float | None,
+    output_price: float | None,
+    *,
+    cache_read: float | None = None,
+    cache_write: float | None = None,
+    reasoning: float | None = None,
+) -> ScrapedRow | None:
+    """Build a :class:`ScrapedRow` from optional price values.
+
+    Returns ``None`` when both *input_price* and *output_price* are ``None``,
+    so callers can skip that row without repeating the guard.
+    """
+    if input_price is None and output_price is None:
+        return None
+    row: ScrapedRow = {"model_id": model_id}
+    if input_price is not None:
+        row["input_per_million"] = input_price
+    if output_price is not None:
+        row["output_per_million"] = output_price
+    if cache_read is not None:
+        row["cache_read_per_million"] = cache_read
+    if cache_write is not None:
+        row["cache_write_per_million"] = cache_write
+    if reasoning is not None:
+        row["reasoning_per_million"] = reasoning
+    return row
 
 
 class BaseScraper:

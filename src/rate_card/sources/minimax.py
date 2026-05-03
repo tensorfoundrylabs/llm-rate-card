@@ -1,6 +1,12 @@
 from collections.abc import Iterable
 
-from rate_card.sources._scraper import BaseScraper, ScrapedRow, extract_price_tables, parse_price
+from rate_card.sources._scraper import (
+    BaseScraper,
+    ScrapedRow,
+    extract_price_tables,
+    make_scraped_row,
+    parse_price,
+)
 
 
 class MiniMax(BaseScraper):
@@ -17,19 +23,12 @@ class MiniMax(BaseScraper):
             model_id = record.get("Model", "").strip()
             if not model_id:
                 continue
-            input_price = parse_price(record.get("Input", ""))
-            output_price = parse_price(record.get("Output", ""))
-            if input_price is None and output_price is None:
-                continue
-            row: ScrapedRow = {"model_id": model_id}
-            if input_price is not None:
-                row["input_per_million"] = input_price
-            if output_price is not None:
-                row["output_per_million"] = output_price
-            cache_read = parse_price(record.get("Prompt caching Read", ""))
-            if cache_read is not None:
-                row["cache_read_per_million"] = cache_read
-            cache_write = parse_price(record.get("Prompt caching Write", ""))
-            if cache_write is not None:
-                row["cache_write_per_million"] = cache_write
-            yield row
+            row = make_scraped_row(
+                model_id,
+                parse_price(record.get("Input", "")),
+                parse_price(record.get("Output", "")),
+                cache_read=parse_price(record.get("Prompt caching Read", "")),
+                cache_write=parse_price(record.get("Prompt caching Write", "")),
+            )
+            if row is not None:
+                yield row
