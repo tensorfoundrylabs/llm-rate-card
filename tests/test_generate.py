@@ -3,7 +3,7 @@ import textwrap
 from pathlib import Path
 from typing import Any
 
-from rate_card.generate import _carry_forward_verified, run
+from rate_card.generate import _build_document, _carry_forward_verified, run
 from rate_card.schema import load_schema, validate_document
 from rate_card.types import PartialEntry
 
@@ -222,3 +222,44 @@ def test_carry_forward_verified_price_changed() -> None:
     }
     _carry_forward_verified(entries, previous, "2026-05-02")
     assert entries[0]["verified"] == "2026-05-02"
+
+
+def test_build_document_carries_all_optional_schema_fields() -> None:
+    """Every optional field in the schema model definition is preserved through _build_document.
+
+    Derives the set of optional fields from the schema itself so any future schema
+    additions trigger a test failure if _build_document is not updated to carry them.
+    """
+    schema = load_schema(SCHEMA_PATH)
+    model_def = schema["$defs"]["model"]
+    required: set[str] = set(model_def["required"])
+    all_props: set[str] = set(model_def["properties"].keys())
+    optional_fields = all_props - required
+
+    entry: PartialEntry = {
+        "key": "openai:test-model",
+        "provider": "openai",  # type: ignore[typeddict-item]
+        "model_id": "test-model",
+        "mode": "chat",
+        "input_per_million": 1.0,
+        "output_per_million": 4.0,
+        "cache_read_per_million": 0.1,
+        "cache_write_per_million": 0.2,
+        "reasoning_per_million": 0.5,
+        "pricing_tiers": [{"above_input_tokens": 200000, "input_per_million": 2.0}],
+        "context_window": 128000,
+        "modality_pricing": {"audio": {"input_per_million": 10.0}},
+        "max_output_tokens": 4096,
+        "deprecation_date": "2026-12-31",
+        "source_url": "https://example.com",
+        "verified": "2026-05-02",
+        "capabilities": [],
+        "sources": ["litellm"],
+    }
+
+    doc = _build_document([entry], "2026.05.02", "2026-05-02T00:00:00Z", None)
+    assert len(doc["models"]) == 1
+    model = doc["models"][0]
+
+    for field in optional_fields:
+        assert field in model, f"optional field {field!r} was dropped by _build_document"
