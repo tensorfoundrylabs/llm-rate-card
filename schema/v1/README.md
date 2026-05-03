@@ -69,3 +69,4 @@ Some providers publish separate token rates per input modality (audio, image, vi
 |---|---|---|---|---|
 | unreleased | 1.0.0 | initial; open-vocabulary refactor; registries.json introduced | Thushan Fernando | TensorFoundry
 | 2026-05-02 | 1.0.0 | add modality_pricing field and modalities registry vocabulary | Thushan Fernando | TensorFoundry
+| 2026-05-02 | 1.0.0 | make context_window and output_per_million optional; image-generation models have pixel-based input and no token-denominated output | Thushan Fernando | TensorFoundry

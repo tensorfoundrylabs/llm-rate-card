@@ -160,3 +160,61 @@ def test_validate_modality_pricing_extra_property_fails() -> None:
     }
     with pytest.raises(SchemaValidationError):
         validate_document(doc, schema)
+
+
+def test_validate_image_gen_without_context_window_and_output() -> None:
+    schema = load_schema(SCHEMA_PATH)
+    doc = copy.deepcopy(MINIMAL_VALID)
+    doc["models"].append(
+        {
+            "key": "openai:gpt-image-2",
+            "provider": "openai",
+            "model_id": "gpt-image-2",
+            "mode": "image_generation",
+            "input_per_million": 5.0,
+            "capabilities": ["vision"],
+            "verified": "2026-05-02",
+            "sources": ["litellm"],
+        }
+    )
+    validate_document(doc, schema)  # must not raise
+
+
+def test_validate_image_gen_context_window_still_enforced_when_present() -> None:
+    schema = load_schema(SCHEMA_PATH)
+    doc = copy.deepcopy(MINIMAL_VALID)
+    doc["models"].append(
+        {
+            "key": "openai:gpt-image-2",
+            "provider": "openai",
+            "model_id": "gpt-image-2",
+            "mode": "image_generation",
+            "input_per_million": 5.0,
+            "context_window": 0,
+            "capabilities": [],
+            "verified": "2026-05-02",
+            "sources": ["litellm"],
+        }
+    )
+    with pytest.raises(SchemaValidationError):
+        validate_document(doc, schema)
+
+
+def test_validate_image_gen_output_still_enforced_when_present() -> None:
+    schema = load_schema(SCHEMA_PATH)
+    doc = copy.deepcopy(MINIMAL_VALID)
+    doc["models"].append(
+        {
+            "key": "openai:gpt-image-2",
+            "provider": "openai",
+            "model_id": "gpt-image-2",
+            "mode": "image_generation",
+            "input_per_million": 5.0,
+            "output_per_million": -1.0,
+            "capabilities": [],
+            "verified": "2026-05-02",
+            "sources": ["litellm"],
+        }
+    )
+    with pytest.raises(SchemaValidationError):
+        validate_document(doc, schema)

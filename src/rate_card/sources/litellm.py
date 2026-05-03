@@ -129,10 +129,11 @@ def _transform_entry(raw_key: str, entry: dict[str, Any]) -> PartialEntry | None
     raw_mode = entry.get("mode", "chat")
     mode: Mode = raw_mode if raw_mode in _VALID_MODES else "chat"
 
-    # Entries without token pricing are not usable for cost calculation
+    # Entries without input pricing are not usable for cost calculation.
+    # Output pricing is optional: image-generation models output bytes, not tokens.
     input_cost = entry.get("input_cost_per_token")
     output_cost = entry.get("output_cost_per_token")
-    if input_cost is None or output_cost is None:
+    if input_cost is None:
         return None
 
     key, model_id = _derive_key_and_model_id(raw_key, provider)
@@ -143,9 +144,10 @@ def _transform_entry(raw_key: str, entry: dict[str, Any]) -> PartialEntry | None
         "model_id": model_id,
         "mode": mode,
         "input_per_million": round_per_million(float(input_cost) * _TOKENS_PER_MILLION),
-        "output_per_million": round_per_million(float(output_cost) * _TOKENS_PER_MILLION),
         "sources": ["litellm"],
     }
+    if output_cost is not None:
+        partial["output_per_million"] = round_per_million(float(output_cost) * _TOKENS_PER_MILLION)
 
     context = entry.get("max_input_tokens") or entry.get("max_tokens")
     if context is not None:

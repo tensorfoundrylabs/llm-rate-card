@@ -105,6 +105,18 @@
       "source_url": "https://ai.google.dev/pricing"
     },
     {
+      "key": "openai:gpt-image-2",
+      "provider": "openai",
+      "model_id": "gpt-image-2",
+      "mode": "image_generation",
+      "input_per_million": 5.0,
+      "capabilities": ["vision"],
+      "deprecation_date": null,
+      "verified": "2026-05-02",
+      "sources": ["litellm", "openai-direct"],
+      "source_url": "https://openai.com/api/pricing"
+    },
+    {
       "key": "openai:gpt-realtime-1.5",
       "provider": "openai",
       "model_id": "gpt-realtime-1.5",

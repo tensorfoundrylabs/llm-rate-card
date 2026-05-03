@@ -100,13 +100,13 @@ class FullEntry(TypedDict):
     model_id: str
     mode: Mode
     input_per_million: float
-    output_per_million: float
+    output_per_million: NotRequired[float]
     cache_read_per_million: NotRequired[float | None]
     cache_write_per_million: NotRequired[float | None]
     reasoning_per_million: NotRequired[float | None]
     pricing_tiers: NotRequired[list[PricingTier]]
     modality_pricing: NotRequired[Mapping[str, ModalityPricing]]
-    context_window: int
+    context_window: NotRequired[int]
     max_output_tokens: NotRequired[int | None]
     capabilities: list[Capability]
     deprecation_date: NotRequired[str | None]
