@@ -15,7 +15,7 @@ sources.yaml -> fetch -> transform -> merge -> filter -> verified carry-forward 
 | filter | `filter.py` | Keeps only entries whose `key` is in `whitelist.yaml`. Logs whitelist entries with no matching source data. |
 | carry forward | `generate.py` | If `--previous` is supplied, copies `verified` dates from the previous artefact for entries whose prices have not changed. |
 | validate | `schema.py` | Validates the assembled document against `schema/v1/schema.json`. Raises on any mismatch. |
-| cross-check | `registries.py` | Verifies every provider, mode, and capability in the document is listed in `schema/v1/registries.json`. Fails loudly on any unknown value. |
+| cross-check | `registries.py` | Verifies every provider, mode, capability, and modality_pricing key in the document is listed in `schema/v1/registries.json`. Fails loudly on any unknown value. |
 | hash | `hashing.py` | SHA-256 over the canonicalised `models` array. Drives release-if-changed: identical hash means no new release. |
 | write | `generate.py` | Writes the artefact and, if any divergences were recorded, a sibling `*.divergences.json`. |
 
@@ -71,6 +71,12 @@ Add the class to `sources.yaml` with `role: secondary`. The merge step composes 
 ### Open-vocabulary constraint
 
 Emitting a new `provider` value in any source also requires adding that value to `schema/v1/registries.json`. The pipeline's cross-check step fails loudly if an unknown value reaches the final document. This applies to `mode` and `capabilities` values too.
+
+## Field reference: modality_pricing
+
+Multi-modal models (such as OpenAI's Realtime and image-generation models) publish separate token rates for different input types. The `modality_pricing` field holds these as a dict keyed by modality name (`audio`, `image`, `video`).
+
+The top-level `input_per_million`, `output_per_million`, and cache fields always carry **text** rates and are the canonical default. `modality_pricing` holds non-text rates only; `text` is never a key. Each value has the shape `{input_per_million, output_per_million?, cache_read_per_million?, cache_write_per_million?}`. The merge step deep-merges per-modality keys from secondary sources so a secondary supplying `image` rates does not erase `audio` rates already present from an earlier source. Consumers that encounter an unknown modality key should fall back to top-level text rates.
 
 ## Running
 

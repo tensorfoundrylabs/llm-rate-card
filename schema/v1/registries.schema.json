@@ -5,8 +5,9 @@
   "description": "Canonical vocabularies for the rate card schema.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["providers", "modes", "capabilities"],
+  "required": ["modalities", "providers", "modes", "capabilities"],
   "properties": {
+    "modalities":   { "$ref": "#/$defs/identifier_list" },
     "providers":    { "$ref": "#/$defs/identifier_list" },
     "modes":        { "$ref": "#/$defs/identifier_list" },
     "capabilities": { "$ref": "#/$defs/identifier_list" }

@@ -363,17 +363,20 @@ def test_entry_without_input_cost_skipped() -> None:
     assert result is None
 
 
-def test_entry_without_output_cost_skipped() -> None:
+def test_entry_without_output_cost_included() -> None:
+    # output_per_million is now optional; image-gen models may omit it.
     result = _transform_entry(
-        "no-output-cost",
+        "gpt-image-1-mini",
         {
             "litellm_provider": "openai",
-            "input_cost_per_token": 1e-06,
-            "mode": "chat",
-            "max_input_tokens": 128000,
+            "input_cost_per_token": 2e-06,
+            "mode": "image_generation",
+            "max_input_tokens": None,
         },
     )
-    assert result is None
+    assert result is not None
+    assert result["input_per_million"] == pytest.approx(2.0)
+    assert "output_per_million" not in result
 
 
 def test_entry_with_unknown_provider_skipped() -> None:

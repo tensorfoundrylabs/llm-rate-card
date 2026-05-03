@@ -48,3 +48,22 @@ def test_added_model_different_hash() -> None:
 def test_empty_list() -> None:
     result = content_hash([])
     assert result.startswith("sha256:")
+
+
+def test_modality_pricing_order_independent() -> None:
+    # modality keys in different insertion order must produce the same hash
+    a = {
+        **_model("openai:gpt-rt", 4.0),
+        "modality_pricing": {
+            "audio": {"input_per_million": 32.0},
+            "image": {"input_per_million": 5.0},
+        },
+    }
+    b = {
+        **_model("openai:gpt-rt", 4.0),
+        "modality_pricing": {
+            "image": {"input_per_million": 5.0},
+            "audio": {"input_per_million": 32.0},
+        },
+    }
+    assert content_hash([a]) == content_hash([b])

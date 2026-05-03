@@ -121,3 +121,51 @@ def test_multiple_divergences_same_entry() -> None:
     fields = {d.field for d in divs}
     assert "input_per_million" in fields
     assert "output_per_million" in fields
+
+
+# ── modality_pricing deep-merge ────────────────────────────────────────────────
+
+
+def test_modality_pricing_deep_merge() -> None:
+    primary = [
+        _entry("openai:gpt-realtime", modality_pricing={"audio": {"input_per_million": 32.0}})
+    ]
+    secondary = [
+        _entry(
+            "openai:gpt-realtime",
+            source="openai-direct",
+            modality_pricing={"image": {"input_per_million": 5.0}},
+        )
+    ]
+    merged, _ = merge({"litellm": primary, "openai-direct": secondary}, threshold=0.20)
+    mp = merged[0].get("modality_pricing", {})
+    assert "audio" in mp
+    assert "image" in mp
+    assert mp["audio"]["input_per_million"] == pytest.approx(32.0)
+    assert mp["image"]["input_per_million"] == pytest.approx(5.0)
+
+
+def test_modality_pricing_secondary_overwrites_same_key() -> None:
+    primary = [
+        _entry("openai:gpt-realtime", modality_pricing={"audio": {"input_per_million": 32.0}})
+    ]
+    secondary = [
+        _entry(
+            "openai:gpt-realtime",
+            source="openai-direct",
+            modality_pricing={"audio": {"input_per_million": 20.0}},
+        )
+    ]
+    merged, _ = merge({"litellm": primary, "openai-direct": secondary}, threshold=0.20)
+    mp = merged[0].get("modality_pricing", {})
+    assert mp["audio"]["input_per_million"] == pytest.approx(20.0)
+
+
+def test_modality_pricing_primary_only_preserved() -> None:
+    primary = [
+        _entry("openai:gpt-realtime", modality_pricing={"audio": {"input_per_million": 32.0}})
+    ]
+    secondary = [_entry("openai:gpt-realtime", source="openai-direct")]
+    merged, _ = merge({"litellm": primary, "openai-direct": secondary}, threshold=0.20)
+    mp = merged[0].get("modality_pricing", {})
+    assert "audio" in mp

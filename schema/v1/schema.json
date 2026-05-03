@@ -111,8 +111,6 @@
         "model_id",
         "mode",
         "input_per_million",
-        "output_per_million",
-        "context_window",
         "capabilities",
         "verified",
         "sources"
@@ -136,7 +134,8 @@
         },
         "output_per_million": {
           "type": "number",
-          "minimum": 0
+          "minimum": 0,
+          "description": "Price per 1M output tokens, in the document currency. Absent for image-generation and other models where output is not token-denominated."
         },
         "cache_read_per_million": {
           "type": ["number", "null"],
@@ -172,7 +171,7 @@
         "context_window": {
           "type": "integer",
           "minimum": 1,
-          "description": "Max input tokens the model accepts."
+          "description": "Max input tokens the model accepts. Absent for image-generation models whose input is pixel-based rather than token-based."
         },
         "max_output_tokens": {
           "type": ["integer", "null"],
@@ -204,6 +203,21 @@
           "type": ["string", "null"],
           "format": "uri",
           "description": "Optional link to the canonical pricing page for traceability."
+        },
+        "modality_pricing": {
+          "type": "object",
+          "description": "Per-modality token pricing for multi-modal models. Keys are modality names from registries.modalities (excluding 'text', which is the top-level default).",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["input_per_million"],
+            "properties": {
+              "input_per_million": { "type": "number", "minimum": 0 },
+              "output_per_million": { "type": ["number", "null"], "minimum": 0 },
+              "cache_read_per_million": { "type": ["number", "null"], "minimum": 0 },
+              "cache_write_per_million": { "type": ["number", "null"], "minimum": 0 }
+            }
+          }
         }
       }
     },

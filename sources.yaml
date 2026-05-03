@@ -4,3 +4,66 @@
   role: primary
   enabled: true
   url: "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
+
+- module: rate_card.sources.glm
+  class: GLM
+  name: glm-direct
+  role: secondary
+  enabled: true
+  url: "https://docs.z.ai/guides/overview/pricing"
+
+- module: rate_card.sources.minimax
+  class: MiniMax
+  name: minimax-direct
+  role: secondary
+  enabled: true
+  url: "https://platform.minimax.io/docs/guides/pricing-paygo"
+
+- module: rate_card.sources.groq
+  class: Groq
+  name: groq-direct
+  role: secondary
+  enabled: true
+  url: "https://groq.com/pricing"
+
+- module: rate_card.sources.xai
+  class: XAI
+  name: xai-direct
+  role: secondary
+  enabled: true
+  url: "https://docs.x.ai/developers/models"
+
+- module: rate_card.sources.openai
+  class: OpenAI
+  name: openai-direct
+  role: secondary
+  enabled: true
+  url: "https://developers.openai.com/api/docs/pricing"
+
+- module: rate_card.sources.anthropic
+  class: Anthropic
+  name: anthropic-direct
+  role: secondary
+  enabled: true
+  url: "https://docs.anthropic.com/en/docs/about-claude/models/overview"
+
+- module: rate_card.sources.cerebras
+  class: Cerebras
+  name: cerebras-direct
+  role: secondary
+  enabled: true
+  url: "https://www.cerebras.ai/pricing"
+
+- module: rate_card.sources.qwen
+  class: Qwen
+  name: qwen-direct
+  role: secondary
+  enabled: true
+  url: "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+
+- module: rate_card.sources.mistral
+  class: Mistral
+  name: mistral-direct
+  role: secondary
+  enabled: true
+  url: "https://mistral.ai/pricing"
