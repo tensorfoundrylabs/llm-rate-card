@@ -60,3 +60,10 @@
   role: secondary
   enabled: true
   url: "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+
+- module: rate_card.sources.mistral
+  class: Mistral
+  name: mistral-direct
+  role: secondary
+  enabled: true
+  url: "https://mistral.ai/pricing"
