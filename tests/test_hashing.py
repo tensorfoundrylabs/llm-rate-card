@@ -50,6 +50,24 @@ def test_empty_list() -> None:
     assert result.startswith("sha256:")
 
 
+def test_verified_change_does_not_change_hash() -> None:
+    a = _model("openai:gpt-4o", 2.5)
+    b = {**a, "verified": "2099-01-01"}
+    assert content_hash([a]) == content_hash([b])
+
+
+def test_sources_change_does_not_change_hash() -> None:
+    a = _model("openai:gpt-4o", 2.5)
+    b = {**a, "sources": ["litellm", "openai-direct"]}
+    assert content_hash([a]) == content_hash([b])
+
+
+def test_price_change_still_changes_hash_after_exclusions() -> None:
+    a = _model("openai:gpt-4o", 2.5)
+    b = {**a, "input_per_million": 9.99}
+    assert content_hash([a]) != content_hash([b])
+
+
 def test_modality_pricing_order_independent() -> None:
     # modality keys in different insertion order must produce the same hash
     a = {

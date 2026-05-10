@@ -92,12 +92,16 @@ jobs:
 
       - name: get previous rate card
         id: prev
-        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download latest -p rate-card.json -O previous.json
-          echo "found=true" >> "$GITHUB_OUTPUT"
+          if gh release view latest --json tagName --jq '.tagName' > /dev/null 2>&1; then
+            gh release download latest -p rate-card.json -O previous.json
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No prior release found; treating as first run."
+          fi
 
       - name: generate from live sources
         run: |
