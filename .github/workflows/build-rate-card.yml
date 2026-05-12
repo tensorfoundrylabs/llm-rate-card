@@ -95,13 +95,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view latest --json tagName --jq '.tagName' > /dev/null 2>&1; then
-            gh release download latest -p rate-card.json -O previous.json
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "No prior release found; treating as first run."
+          if ! LATEST_TAG=$(gh api repos/${{ github.repository }}/releases/latest --jq '.tag_name' 2>/tmp/gh_err); then
+            if grep -q "Not Found\|release not found\|404" /tmp/gh_err 2>/dev/null; then
+              echo "found=false" >> "$GITHUB_OUTPUT"
+              echo "No prior release found; treating as first run."
+              exit 0
+            fi
+            echo "Unexpected error fetching latest release:" >&2
+            cat /tmp/gh_err >&2
+            exit 1
           fi
+          gh release download "$LATEST_TAG" -p rate-card.json -O previous.json
+          echo "found=true" >> "$GITHUB_OUTPUT"
 
       - name: generate from live sources
         run: |
@@ -163,7 +168,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          PREV=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || true)
+          if ! PREV=$(gh api repos/${{ github.repository }}/releases/latest --jq '.tag_name' 2>/dev/null); then
+            PREV=""
+          fi
           echo "tag=${PREV}" >> "$GITHUB_OUTPUT"
 
       - name: publish release

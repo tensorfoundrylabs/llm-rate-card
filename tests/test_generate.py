@@ -224,6 +224,88 @@ def test_carry_forward_verified_price_changed() -> None:
     assert entries[0]["verified"] == "2026-05-02"
 
 
+def test_content_hash_stable_without_previous(tmp_path: Path) -> None:
+    wl = _full_whitelist(tmp_path)
+    out1 = tmp_path / "r1.json"
+    out2 = tmp_path / "r2.json"
+    doc1, _ = run(
+        config_path=CONFIG_PATH,
+        sources_path=SOURCES_PATH,
+        whitelist_path=wl,
+        output_path=out1,
+        use_fixture=True,
+    )
+    doc2, _ = run(
+        config_path=CONFIG_PATH,
+        sources_path=SOURCES_PATH,
+        whitelist_path=wl,
+        output_path=out2,
+        use_fixture=True,
+    )
+    assert doc1["content_hash"] == doc2["content_hash"]
+
+
+def test_content_hash_stable_with_previous(tmp_path: Path) -> None:
+    wl = _full_whitelist(tmp_path)
+    out1 = tmp_path / "r1.json"
+    doc1, _ = run(
+        config_path=CONFIG_PATH,
+        sources_path=SOURCES_PATH,
+        whitelist_path=wl,
+        output_path=out1,
+        use_fixture=True,
+    )
+    previous_path = tmp_path / "previous.json"
+    previous = json.loads(out1.read_text())
+    for m in previous["models"]:
+        m["verified"] = "2020-01-01"
+    previous_path.write_text(json.dumps(previous))
+
+    out2 = tmp_path / "r2.json"
+    doc2, _ = run(
+        config_path=CONFIG_PATH,
+        sources_path=SOURCES_PATH,
+        whitelist_path=wl,
+        output_path=out2,
+        previous_path=previous_path,
+        use_fixture=True,
+    )
+    assert doc1["content_hash"] == doc2["content_hash"]
+
+
+def test_carry_forward_verified_old_date_preserved(tmp_path: Path) -> None:
+    wl = _full_whitelist(tmp_path)
+    out1 = tmp_path / "r1.json"
+    run(
+        config_path=CONFIG_PATH,
+        sources_path=SOURCES_PATH,
+        whitelist_path=wl,
+        output_path=out1,
+        use_fixture=True,
+    )
+
+    previous_path = tmp_path / "previous.json"
+    previous = json.loads(out1.read_text())
+    old_date = "2024-01-15"
+    for m in previous["models"]:
+        m["verified"] = old_date
+    previous_path.write_text(json.dumps(previous))
+
+    out2 = tmp_path / "r2.json"
+    doc2, _ = run(
+        config_path=CONFIG_PATH,
+        sources_path=SOURCES_PATH,
+        whitelist_path=wl,
+        output_path=out2,
+        previous_path=previous_path,
+        use_fixture=True,
+    )
+    for model in doc2["models"]:
+        assert model["verified"] == old_date, (
+            f"{model['key']}: expected verified={old_date!r}, got {model['verified']!r}"
+        )
+
+
 def test_build_document_carries_all_optional_schema_fields() -> None:
     """Every optional field in the schema model definition is preserved through _build_document.
 
